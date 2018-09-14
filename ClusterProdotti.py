@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# questo file replica il clustering che ha generato la prima mail sul clustering
+# ma lo impesto cambiando le variabili e sperimentando. Le tecniche però sono
+# le stesse
+
 # {{{ Import
 import numpy as np
 import seaborn as sns
@@ -12,7 +16,7 @@ from mpl_toolkits.mplot3d import Axes3D, axes3d
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
-import Others.Renders as rd
+import Lib.Renders as rd
 import pandas as pd
 import AbocaUsers
 import AbocaAvatar
@@ -102,7 +106,7 @@ prod_proc.GeoRatio=scale(np.log(prod.GeoRatio))
 
 # {{{ Feature Relevance
 # droppo in base alle osservazioni risultanti del ciclo successivo
-prod_proc.drop(['nFarma','nRight','nUsers','GeoRatio','LatVar','nReg','nTot'],axis=1,inplace=True)
+prod_proc.drop(['nFarma','nRight','GeoRatio','LatVar','nReg','nProv','nUsers','NordSud'],axis=1,inplace=True)
 
 feats = prod_proc.keys()
 feats = feats.drop(['ProductId','Name'])
@@ -141,16 +145,18 @@ if 0:
 esempi = ['P0011AN','P0018AN','P0080AB'] 
 esempi_orig = prod[prod.ProductId.isin(esempi)]
 esempi_proc = prod_proc[prod_proc.ProductId.isin(esempi)].drop(['ProductId','Name'],axis=1)
-print('Esempi selezionati')
-display(esempi_orig)
-pca = PCA(n_components=2)
+# print('Esempi selezionati')
+# display(esempi_orig)
+pca = PCA(n_components=3)
 pca.fit(prod_feat)
 esempi_pca = pca.transform(esempi_proc)
 pca_results = rd.pca_results(prod_feat, pca)
 pyplot.savefig('./ClusterFig/pcadim.png')
 
-print('Esempi trasformati')
-display(pd.DataFrame(np.round(esempi_pca, 4), columns = pca_results.index.values))
+print('Risultati PCA')
+print(pca_results)
+# print('Esempi trasformati')
+# display(pd.DataFrame(np.round(esempi_pca, 4), columns = pca_results.index.values))
 
 prod_red = np.round(pca.transform(prod_feat),4)
 df_red =pd.DataFrame(prod_red, columns = pca_results.index.values)
@@ -173,8 +179,8 @@ def add_cluster_plot(df,df_sample,col1,col2,pred_tot,sample_pred,sub_num):
 # {{{ Clustering - dati originali + Kmeans
 data_to_fit = prod_feat
 samples_to_fit = esempi_proc
-if 0:
-    for n_clusters in range(4,5):
+if 1:
+    for n_clusters in range(2,5):
         clusterer = KMeans(n_clusters=n_clusters, random_state=1)
         clusterer.fit(data_to_fit)
         preds = clusterer.predict(data_to_fit)
@@ -185,12 +191,12 @@ if 0:
         print("{0} clusters: {1:.4f}".format(n_clusters, score))
         
         if 1:
-            add_cluster_plot(prod,esempi_orig,'Ratio','NordSud',preds,sample_preds,221)
-            add_cluster_plot(prod,esempi_orig,'UserRatio','nProv',preds,sample_preds,222)
-            add_cluster_plot(prod,esempi_orig,'Ratio','nProv',preds,sample_preds,223)
-            add_cluster_plot(prod,esempi_orig,'NordSud','UserRatio',preds,sample_preds,224)
+            add_cluster_plot(prod,esempi_orig,'nTot','Ratio',preds,sample_preds,221)
+            add_cluster_plot(prod,esempi_orig,'UserRatio','nTot',preds,sample_preds,222)
+            add_cluster_plot(prod,esempi_orig,'nTot','UserRatio',preds,sample_preds,223)
+            add_cluster_plot(prod,esempi_orig,'UserRatio','Ratio',preds,sample_preds,224)
             fname = 'ProdOrig' + str(n_clusters) + '.png'
-            pyplot.savefig('./ClusterFig/'+fname)
+            # pyplot.savefig('./ClusterFig/'+fname)
             pyplot.show()
             input('press enter')
 # }}}
@@ -198,8 +204,8 @@ if 0:
 # {{{ Clustering - PCA + Kmeans
 data_to_fit = df_red
 samples_to_fit = df_samples_red
-if 1:
-    for n_clusters in range(4,5):
+if 0:
+    for n_clusters in range(2,5):
         clusterer = KMeans(n_clusters=n_clusters, random_state=1)
         clusterer.fit(data_to_fit)
         preds = clusterer.predict(data_to_fit)

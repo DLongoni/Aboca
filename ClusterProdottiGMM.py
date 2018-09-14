@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
-# 14-9-18: salvo questo file perchè è quello che ha generato i cluster della prima mail girata, nel caso in cui servisse replicare
-
 # {{{ Import
 import numpy as np
-import seaborn as sns
-from sklearn.cluster import KMeans
+import seaborn as sns; sns.set()
+from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import scale
 from sklearn.metrics import silhouette_score
-from matplotlib import pyplot
-from mpl_toolkits.mplot3d import Axes3D, axes3d
+import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeRegressor
@@ -81,7 +78,7 @@ prod['Ratio']=prod.nRight/prod.nTot
 prod['UserRatio']=prod.nTot/prod.nUsers
 prod['GeoRatio']=prod.nTot/prod.nProv
 # pd.plotting.scatter_matrix(prod,diagonal = 'kde')
-# pyplot.show()
+# plt.show()
 # nFarma e nUsers sono sostituibili
 prod=prod[prod.nTot>2] # seleziono quelli su cui ha senso fare un'analisi? corretto o no?
 
@@ -98,7 +95,7 @@ prod_proc.Ratio=scale(prod.Ratio)
 prod_proc.UserRatio=scale(np.log(prod.UserRatio))
 prod_proc.GeoRatio=scale(np.log(prod.GeoRatio))
 # pd.plotting.scatter_matrix(prod_proc,diagonal = 'kde')
-# pyplot.show()
+# plt.show()
 # }}}
 
 # {{{ Feature Relevance
@@ -148,7 +145,7 @@ pca = PCA(n_components=2)
 pca.fit(prod_feat)
 esempi_pca = pca.transform(esempi_proc)
 pca_results = rd.pca_results(prod_feat, pca)
-pyplot.savefig('./ClusterFig/pcadim.png')
+plt.savefig('./ClusterFig/pcadim.png')
 
 print('Esempi trasformati')
 display(pd.DataFrame(np.round(esempi_pca, 4), columns = pca_results.index.values))
@@ -163,25 +160,22 @@ def add_cluster_plot(df,df_sample,col1,col2,pred_tot,sample_pred,sub_num):
     c_tot = [col_arr[i] for i in pred_tot]
     c_samp = [col_arr[i] for i in sample_pred]
     if sub_num:
-        pyplot.subplot(sub_num) 
-    pyplot.scatter(x=df[col1],y=df[col2],c=c_tot) 
-    pyplot.scatter(x=df_sample[col1],y=df_sample[col2], lw=1, 
+        plt.subplot(sub_num) 
+    plt.scatter(x=df[col1],y=df[col2],c=c_tot) 
+    plt.scatter(x=df_sample[col1],y=df_sample[col2], lw=1, 
         facecolor=c_samp,marker='D',edgecolors='black') 
-    pyplot.xlabel(col1)
-    pyplot.ylabel(col2)
+    plt.xlabel(col1)
+    plt.ylabel(col2)
 
 
-# {{{ Clustering - dati originali + Kmeans
+# {{{ Clustering - dati originali 
 data_to_fit = prod_feat
 samples_to_fit = esempi_proc
-if 0:
-    for n_clusters in range(4,5):
-        clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        clusterer.fit(data_to_fit)
+if 1:
+    for n_clusters in range(2,5):
+        clusterer = GaussianMixture(n_components=n_clusters, init_params='random').fit(data_to_fit)
         preds = clusterer.predict(data_to_fit)
-        centers = clusterer.cluster_centers_
         sample_preds = clusterer.predict(samples_to_fit)
-        # Calculate the mean silhouette coefficient for the number of clusters chosen
         score = silhouette_score(data_to_fit, preds, random_state=1)
         print("{0} clusters: {1:.4f}".format(n_clusters, score))
         
@@ -191,39 +185,37 @@ if 0:
             add_cluster_plot(prod,esempi_orig,'Ratio','nProv',preds,sample_preds,223)
             add_cluster_plot(prod,esempi_orig,'NordSud','UserRatio',preds,sample_preds,224)
             fname = 'ProdOrig' + str(n_clusters) + '.png'
-            pyplot.savefig('./ClusterFig/'+fname)
-            pyplot.show()
+            # plt.savefig('./ClusterFig/'+fname)
+            plt.show()
             input('press enter')
 # }}}
 
-# {{{ Clustering - PCA + Kmeans
+# {{{ Clustering - PCA 
 data_to_fit = df_red
 samples_to_fit = df_samples_red
-if 1:
-    for n_clusters in range(4,5):
-        clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        clusterer.fit(data_to_fit)
+if 0:
+    for n_clusters in range(2,5):
+        clusterer = GaussianMixture(n_components=n_clusters, init_params='random').fit(data_to_fit)
         preds = clusterer.predict(data_to_fit)
-        centers = clusterer.cluster_centers_
         sample_preds = clusterer.predict(samples_to_fit)
-        # Calculate the mean silhouette coefficient for the number of clusters chosen
         score = silhouette_score(data_to_fit, preds, random_state=1)
         print("{0} clusters: {1:.4f}".format(n_clusters, score))
         
         if 1:
-            pyplot.figure(0)
+            plt.figure(0)
             fname = 'ProdPCAdomPCA' + str(n_clusters) + '.png'
-            add_cluster_plot(df_red,df_samples_red,'Dimension 1','Dimension 2',preds,sample_preds,None)
-            pyplot.title(str(n_clusters)+' clust PCA ')
-            # pyplot.savefig('./ClusterFig/'+fname)
-            pyplot.figure(1)
+            # add_cluster_plot(df_red,df_samples_red,'Dimension 1','Dimension 2',preds,sample_preds,None)
+            rd.plot_gmm(clusterer,df_red.values,preds)
+            # plt.title(str(n_clusters)+' clust PCA ')
+            # plt.savefig('./ClusterFig/'+fname)
+            plt.figure(1)
             add_cluster_plot(prod,esempi_orig,'Ratio','NordSud',preds,sample_preds,221)
             add_cluster_plot(prod,esempi_orig,'UserRatio','nProv',preds,sample_preds,222)
             add_cluster_plot(prod,esempi_orig,'Ratio','nProv',preds,sample_preds,223)
             add_cluster_plot(prod,esempi_orig,'NordSud','UserRatio',preds,sample_preds,224)
-            pyplot.title(str(n_clusters)+' clust PCA ')
+            plt.title(str(n_clusters)+' clust PCA ')
             fname = 'ProdPCAdomOrig' + str(n_clusters) + '.png'
-            # pyplot.savefig('./ClusterFig/'+fname)
-            pyplot.show()
+            # plt.savefig('./ClusterFig/'+fname)
+            plt.show()
             input('press enter')
 # }}}
