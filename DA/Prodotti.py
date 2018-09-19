@@ -8,11 +8,10 @@ from matplotlib import pyplot
 import pandas as pd
 from DA import Users
 from DA import Avatar
-import Utils
+from DA import DatesManager as dm
 # }}}
 
 def get_df():
-    # {{{ Caricamento Dati
     df = pd.read_csv('./Dataset/Dumps/out_VrAvatarProducto.csv',sep='|')
     df = Avatar.merge_avatar(df)
     df.drop(['TenantId','DeletionTime','LastModificationTime','SessionId','AvatarId',
@@ -21,11 +20,14 @@ def get_df():
     df = df.drop(df.index[df.ProductType == 'RecommendedProduct'])
     df = df.drop(df.index[df.ProductType == 'SoldProduct'])
     df.CreationTime = pd.to_datetime(df.CreationTime, dayfirst = True)
-    df = Utils.filter_date(df,'CreationTime')
+    df = dm.filter_date(df,'CreationTime')
+    df = dm.add_aggregate_date(df,'CreationTime')
     df = Users.merge_users_clean(df)
-    # }}}
+    return df
 
-    # {{{ Aggregazione colonne dataframe
+def get_df_group_prod(df = None):
+    if df is None:
+        df = get_df()
     # Names 
     prod = df[['ProductId','ProductName','ProductFormat']]
     prod = prod.groupby('ProductId')['ProductName','ProductFormat'].first().reset_index()
@@ -75,7 +77,11 @@ def get_df():
     # pyplot.show()
     # nFarma e nUsers sono sostituibili
     prod=prod[prod.nTot>2] # seleziono quelli su cui ha senso fare un'analisi? corretto o no?
+    return prod
 
+def get_df_group_prod_proc(prod = None):
+    if prod is None:
+        prod = get_df_group_prod()
     prod_proc=prod.copy(deep=True)
     prod_proc.nUsers=scale(np.log(prod.nUsers))
     prod_proc.nFarma=scale(np.log(prod.nFarma))
@@ -90,6 +96,5 @@ def get_df():
     prod_proc.GeoRatio=scale(np.log(prod.GeoRatio))
     # pd.plotting.scatter_matrix(prod_proc,diagonal = 'kde')
     # pyplot.show()
-    # }}}
-    return prod, prod_proc
+    return prod_proc
 

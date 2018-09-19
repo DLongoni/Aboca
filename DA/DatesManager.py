@@ -14,3 +14,4 @@ def add_aggregate_date(df, date_column):
     df['YearMonth'] = df[date_column].dt.to_period('M') # ragiono per mesi
     df['YMD'] = df[date_column].dt.to_period('D') # ragiono per mesi
     return df
+

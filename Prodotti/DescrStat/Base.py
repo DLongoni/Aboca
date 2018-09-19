@@ -3,21 +3,13 @@
 # {{{ Import
 from matplotlib import pyplot
 import pandas as pd
-import AbocaUsers
-import AbocaAvatar
-import Utils
+from DA import Prodotti
+from DA import DatesManager as dm
+from DA import Users
 # }}}
 
 # {{{ Caricamneto dati
-data_tot = pd.read_csv('./Dataset/Dumps/out_VrAvatarProducto.csv',sep='|')
-data_tot = AbocaAvatar.merge_avatar(data_tot)
-data_tot.drop(['TenantId','DeletionTime','LastModificationTime','SessionId','AvatarId',
-    'LastModifierUserId','CreatorUserId','IsDeleted','DeleterUserId','ProductSequence',
-    'ProductPce'],axis=1,inplace=True)
-data_tot = AbocaUsers.clean_df_userid(data_tot)
-data_tot.CreationTime = pd.to_datetime(data_tot.CreationTime, dayfirst = True)
-data_tot = Utils.filter_date(data_tot,'CreationTime')
-data_tot = Utils.add_aggregate_date(data_tot,'CreationTime')
+data_tot = Prodotti.get_df()
 data = data_tot.copy(deep=True)
 
 # Names 
@@ -136,12 +128,11 @@ apce = rwcount(data_rwt,'AvId')
 # }}}
 
 # {{{ Analisi per utente
-du_rw = AbocaUsers.merge_users_clean(data_rw)
-prov = rwcount(du_rw,'Regione')
+prov = rwcount(data_rw,'Regione')
 
-users_per_reg = du_rw.groupby('Regione')['UserId'].nunique().reset_index()
+users_per_reg = data_rw.groupby('Regione')['UserId'].nunique().reset_index()
 users_per_reg.set_index('Regione', inplace=True)
 
 prov = pd.merge(prov,users_per_reg,left_index=True,right_index=True)
-rol = rwcount(du_rw,'RoleId')
+rol = rwcount(data_rw,'RoleId')
 # }}}
