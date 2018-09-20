@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-# 14-9-18: salvo questo file perchè è quello che ha generato i cluster della prima mail girata, nel caso in cui servisse replicare
+# questo file replica il clustering che ha generato la prima mail sul clustering
+# ma lo impesto cambiando le variabili e sperimentando. Le tecniche però sono
+# le stesse
 
 # {{{ Import
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering
+from scipy.cluster.hierarchy import linkage, fcluster
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 import Lib.Renders as rd
@@ -29,7 +32,7 @@ if 0: Features.print_outliers(prod_proc, prod, prod_feat.keys())
 # {{{ PCA
 pca = PCA(n_components=2).fit(prod_feat)
 pca_results = rd.pca_results(prod_feat, pca)
-# plt.savefig('./ClusterFig/pcadim.png')
+# plt.savefig('./Fig/pcadim.png')
 prod_red = np.round(pca.transform(prod_feat),4)
 df_red =pd.DataFrame(prod_red, columns = pca_results.index.values)
 # }}}
@@ -39,6 +42,7 @@ df_red =pd.DataFrame(prod_red, columns = pca_results.index.values)
 # 2: prodotto consigliato a nord
 # 3: esempio consigliato correttamente e numeroso
 samples = ['P0011AN','P0018AN','P0080AB'] 
+samples_id = [i for i in range(0,len(prod_proc)) if prod_proc.ProductId.iloc[i] in samples]
 samples_orig = prod[prod.ProductId.isin(samples)]
 samples_proc = prod_proc[prod_proc.ProductId.isin(samples)].drop(['ProductId','Name'],axis=1)
 print('samples selezionati')
@@ -51,33 +55,34 @@ display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.value
 # }}}
 
 # Questa selezione colonne serve alla procedura di visualizzazione
-prod_visual = prod[['Ratio','NordSud','nProv','UserRatio']]
-samples_visual = samples_orig[['Ratio','NordSud','nProv','UserRatio']]
-clust_range = range(2,5)
+prod_visual = prod[prod_feat.columns]
+samples_visual = samples_orig[prod_feat.columns]
+clust_range = range(3,4)
 
-# {{{ Clustering - dati originali + Kmeans
 if 1:
+#z {{{ Clustering - dati originali + Kmeans
     for n_clusters in clust_range:
-        clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        clusterer.fit(df_red)
-        preds = clusterer.predict(df_red)
-        samples_preds = clusterer.predict(df_samples_red)
-        centers = clusterer.cluster_centers_
+        # clusterer = AgglomerativeClustering(linkage='ward', n_clusters=n_clusters)
+        # preds = clusterer.fit_predict(prod_feat)
+        # samples_preds = clusterer.fit_predict(samples_proc)
+        # Clust.visualize('Agglo', prod_feat, samples_proc, preds, samples_preds, None, prod_visual, samples_visual, 1, 0)
 
-        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        linkage_m = linkage(prod_feat, 'ward')
+        clusters = fcluster(linkage_m, n_clusters, criterion='maxclust') - 1
+        samples_preds = clusters[samples_id]
+        print('distances for the last 5 merges:\n{}'.format(linkage_m[-5:,2]))
+        max_d = np.mean(linkage_m[-n_clusters:-(n_clusters-2),2])
+        Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1, 0)
+        Clust.dendro(linkage_m, clusters, labels=prod.Name.values, orientation='right', max_d=max_d)
         plt.show()
+        # Clust.dendro_clusterer(clusterer.fit(prod_feat), labels=prod.Name.values,orientation='right')
         input('press enter')
 # }}}
 
-# {{{ Clustering - PCA + Kmeans
 if 0:
+# {{{ Clustering - PCA + Kmeans
     for n_clusters in clust_range:
-        clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        clusterer.fit(df_red)
-        preds = clusterer.predict(df_red)
-        samples_preds = clusterer.predict(df_samples_red)
-        centers = clusterer.cluster_centers_
-
-        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        clusterer = AgglomerativeClustering(linkage='ward', n_clusters=n_clusters)
+        Clust.visualize(clusterer, n_clusters, df_red, df_samples_red, prod_visual, samples_visual, 1, 0)
         input('press enter')
 # }}}

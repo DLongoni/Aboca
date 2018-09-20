@@ -57,18 +57,31 @@ prod_visual = prod[prod_feat.columns]
 samples_visual = samples_orig[prod_feat.columns]
 clust_range = range(3,5)
 
-if 1:
+if 0:
 # {{{ Clustering - dati originali + Kmeans
     for n_clusters in clust_range:
         clusterer = KMeans(n_clusters=n_clusters)
-        Clust.visualize(clusterer, n_clusters, prod_feat, samples_proc, prod_visual, samples_visual, 1, 0)
+        clusterer.fit(prod_feat)
+        preds = clusterer.predict(prod_feat)
+        samples_preds = clusterer.predict(samples_proc)
+        centers = clusterer.cluster_centers_
+
+        centers = clusterer.cluster_centers_
+        Clust.visualize('KMeans', prod_feat, samples_proc, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        plt.show()
         input('press enter')
 # }}}
 
-if 0:
+if 1:
 # {{{ Clustering - PCA + Kmeans
     for n_clusters in clust_range:
         clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        Clust.visualize(clusterer, n_clusters, df_red, df_samples_red, prod_visual, samples_visual, 1, 0)
+        clusterer.fit(df_red)
+        preds = clusterer.predict(df_red)
+        samples_preds = clusterer.predict(df_samples_red)
+        centers = clusterer.cluster_centers_
+
+        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        plt.show()
         input('press enter')
 # }}}
