@@ -9,11 +9,11 @@ import numpy as np
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-import Lib.Renders as rd
+import Utils.Renders as rd
 import pandas as pd
 from DA import Prodotti
-from Lib import Features
-from Lib import Clust
+from Utils import Features
+from Utils import Clust
 # }}}
 
 # Get dataset
