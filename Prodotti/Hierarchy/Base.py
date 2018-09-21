@@ -57,10 +57,10 @@ display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.value
 # Questa selezione colonne serve alla procedura di visualizzazione
 prod_visual = prod[prod_feat.columns]
 samples_visual = samples_orig[prod_feat.columns]
-clust_range = range(3,4)
+clust_range = range(5,6)
 
 if 1:
-#z {{{ Clustering - dati originali + Kmeans
+# {{{ Clustering - dati originali + Kmeans
     for n_clusters in clust_range:
         # clusterer = AgglomerativeClustering(linkage='ward', n_clusters=n_clusters)
         # preds = clusterer.fit_predict(prod_feat)
@@ -73,7 +73,8 @@ if 1:
         print('distances for the last 5 merges:\n{}'.format(linkage_m[-5:,2]))
         max_d = np.mean(linkage_m[-n_clusters:-(n_clusters-2),2])
         Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1, 0)
-        Clust.dendro(linkage_m, clusters, labels=prod.Name.values, orientation='right', max_d=max_d)
+        Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
+        # Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
         plt.show()
         # Clust.dendro_clusterer(clusterer.fit(prod_feat), labels=prod.Name.values,orientation='right')
         input('press enter')

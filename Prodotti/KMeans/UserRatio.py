@@ -53,7 +53,7 @@ display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.value
 # Questa selezione colonne serve alla procedura di visualizzazione
 prod_visual = prod[['Ratio','NordSud','nProv','UserRatio']]
 samples_visual = samples_orig[['Ratio','NordSud','nProv','UserRatio']]
-clust_range = range(2,5)
+clust_range = range(4,5)
 
 # {{{ Clustering - dati originali + Kmeans
 if 1:
@@ -64,7 +64,7 @@ if 1:
         samples_preds = clusterer.predict(df_samples_red)
         centers = clusterer.cluster_centers_
 
-        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 1)
         plt.show()
         input('press enter')
 # }}}
