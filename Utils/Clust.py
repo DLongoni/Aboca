@@ -65,24 +65,24 @@ def visualize(clname, df_fit, samples_fit, preds, samples_preds, centers=None, d
     print("Clusters: {0}, silhouette = [{1:.4f}], calinski = [{2:.4f}]".format(n, sscore, csscore))
     
     if plot:
-        plt.figure(0)
+        f = plt.figure(); axf = f.gca();
         name = 'FeatspaceSpace_' + clname + '_' + str(n)
-        plt.suptitle(name)
+        f.suptitle(name)
         clustplot(df_fit, preds, samples_fit, samples_preds)
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
         if save:
-            plt.savefig('./Fig/'+name+'.png')
+            f.savefig('./Fig/'+name+'.png')
 
         if not df_plot is None:
-            plt.figure(1)
+            f = plt.figure(); axf = f.gca();
             name = 'OrigSpace_' + clname + '_' + str(n)
-            plt.suptitle(name)
+            f.suptitle(name)
             clustplot(df_plot, preds, samples_plot, samples_preds)
             mng = plt.get_current_fig_manager()
             mng.window.state('zoomed')
             if save: 
-                plt.savefig('./Fig/'+name+'.png')
+                f.savefig('./Fig/'+name+'.png')
 
     return preds
 

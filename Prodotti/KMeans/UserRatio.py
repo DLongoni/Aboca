@@ -7,11 +7,11 @@ import numpy as np
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-import Lib.Renders as rd
+import Utils.Renders as rd
 import pandas as pd
 from DA import Prodotti
-from Lib import Features
-from Lib import Clust
+from Utils import Features
+from Utils import Clust
 # }}}
 
 # Get dataset
@@ -53,18 +53,18 @@ display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.value
 # Questa selezione colonne serve alla procedura di visualizzazione
 prod_visual = prod[['Ratio','NordSud','nProv','UserRatio']]
 samples_visual = samples_orig[['Ratio','NordSud','nProv','UserRatio']]
-clust_range = range(4,5)
+clust_range = range(3,4)
 
 # {{{ Clustering - dati originali + Kmeans
 if 1:
     for n_clusters in clust_range:
         clusterer = KMeans(n_clusters=n_clusters, random_state=1)
-        clusterer.fit(df_red)
-        preds = clusterer.predict(df_red)
-        samples_preds = clusterer.predict(df_samples_red)
+        clusterer.fit(prod_feat)
+        preds = clusterer.predict(prod_feat)
+        samples_preds = clusterer.predict(samples_proc)
         centers = clusterer.cluster_centers_
 
-        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 1)
+        Clust.visualize('KMeans', prod_feat, samples_proc, preds, samples_preds, centers, prod_visual, samples_visual, 1, 1)
         plt.show()
         input('press enter')
 # }}}

@@ -6,7 +6,8 @@
 
 # {{{ Import
 import numpy as np
-from sklearn.cluster import AgglomerativeClustering
+# from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import KMeans
 from scipy.cluster.hierarchy import linkage, fcluster
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
@@ -57,7 +58,7 @@ display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.value
 # Questa selezione colonne serve alla procedura di visualizzazione
 prod_visual = prod[prod_feat.columns]
 samples_visual = samples_orig[prod_feat.columns]
-clust_range = range(5,6)
+clust_range = range(3,4)
 
 if 1:
 # {{{ Clustering - dati originali + Kmeans
@@ -72,11 +73,19 @@ if 1:
         samples_preds = clusters[samples_id]
         print('distances for the last 5 merges:\n{}'.format(linkage_m[-5:,2]))
         max_d = np.mean(linkage_m[-n_clusters:-(n_clusters-2),2])
-        Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1, 0)
-        Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
+        Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1, 1)
         # Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
+        # Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
+
+        Kclusterer = KMeans(n_clusters=n_clusters, random_state=1)
+        Kclusterer.fit(prod_feat)
+        Kpreds = Kclusterer.predict(prod_feat)
+        Ksamples_preds = Kclusterer.predict(samples_proc)
+        Kcenters = Kclusterer.cluster_centers_
+
+        Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1, 1)
+
         plt.show()
-        # Clust.dendro_clusterer(clusterer.fit(prod_feat), labels=prod.Name.values,orientation='right')
         input('press enter')
 # }}}
 
