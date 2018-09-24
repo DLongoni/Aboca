@@ -66,14 +66,14 @@ if 1:
         # clusterer = AgglomerativeClustering(linkage='ward', n_clusters=n_clusters)
         # preds = clusterer.fit_predict(prod_feat)
         # samples_preds = clusterer.fit_predict(samples_proc)
-        # Clust.visualize('Agglo', prod_feat, samples_proc, preds, samples_preds, None, prod_visual, samples_visual, 1, 0)
+        # Clust.visualize('Agglo', prod_feat, samples_proc, preds, samples_preds, None, prod_visual, samples_visual, 0)
 
         linkage_m = linkage(prod_feat, 'ward')
         clusters = fcluster(linkage_m, n_clusters, criterion='maxclust') - 1
         samples_preds = clusters[samples_id]
         print('distances for the last 5 merges:\n{}'.format(linkage_m[-5:,2]))
         max_d = np.mean(linkage_m[-n_clusters:-(n_clusters-2),2])
-        Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1, 1)
+        Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1)
         # Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
         # Clust.dendro(linkage_m, clusters, None, labels=prod.Name.values, orientation='right', max_d=max_d)
 
@@ -83,7 +83,7 @@ if 1:
         Ksamples_preds = Kclusterer.predict(samples_proc)
         Kcenters = Kclusterer.cluster_centers_
 
-        Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1, 1)
+        Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1)
 
         plt.show()
         input('press enter')
@@ -93,6 +93,6 @@ if 0:
 # {{{ Clustering - PCA + Kmeans
     for n_clusters in clust_range:
         clusterer = AgglomerativeClustering(linkage='ward', n_clusters=n_clusters)
-        Clust.visualize(clusterer, n_clusters, df_red, df_samples_red, prod_visual, samples_visual, 1, 0)
+        Clust.visualize(clusterer, n_clusters, df_red, df_samples_red, prod_visual, samples_visual, 0)
         input('press enter')
 # }}}

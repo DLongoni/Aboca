@@ -19,7 +19,10 @@ from IPython import embed
 # }}}
 
 # {{{ Clustering - PCA + Kmeans
-def add_cluster_plot(df,df_sample,col1,col2,pred_tot,samples_pred,sub_num=None):
+def add_cluster_plot(df,df_sample,iter_cols,pred_tot,samples_pred,centers,sub_num=None):
+    col1=df.columns[iter_cols[0]]
+    col2=df.columns[iter_cols[1]]
+    n = max(pred_tot)-min(pred_tot)+1
     col_arr = Constants.colors
     c_tot = [col_arr[i] for i in pred_tot]
     c_samp = [col_arr[i] for i in samples_pred]
@@ -28,14 +31,17 @@ def add_cluster_plot(df,df_sample,col1,col2,pred_tot,samples_pred,sub_num=None):
     plt.scatter(x=df[col1],y=df[col2],c=c_tot) 
     plt.scatter(x=df_sample[col1],y=df_sample[col2], lw=1, 
         facecolor=c_samp,marker='D',edgecolors='black') 
+    if not centers is None:
+        plt.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
+            facecolor=Constants.colors[0:n],marker='X',edgecolors='k',s=150)
+
     plt.xlabel(col1)
     plt.ylabel(col2)
 
-def clustplot(df, preds, df_samples, samples_preds):
-    cols = df.columns
-    ncolumns = len(cols)
+def clustplot(df, preds, df_samples, samples_preds, centers):
+    ncolumns = len(df.columns)
     if ncolumns == 2:
-        add_cluster_plot(df,df_samples,cols[0],cols[1],preds,samples_preds,None)
+        add_cluster_plot(df,df_samples,cols[0],cols[1],preds,samples_preds,centers,None)
     else:
         iter_sub = [221,222,223,224]
         if ncolumns ==3:
@@ -47,42 +53,34 @@ def clustplot(df, preds, df_samples, samples_preds):
         elif ncolumns ==6:
             iter_cols = [[0,1],[2,3],[4,5],[2,0]]
         for i in range(0,4):
-            c = iter_cols[i]
             sp = iter_sub[i]
-            add_cluster_plot(df,df_samples,cols[c[0]],cols[c[1]],preds,samples_preds,sp)
+            add_cluster_plot(df,df_samples,iter_cols[i],preds,samples_preds,centers,sp)
 
-def visualize(clname, df_fit, samples_fit, preds, samples_preds, centers=None, df_plot=None, samples_plot=None, plot=True, save=False):
-    if 0:
-        clusterer.fit(df_fit)
-        preds = clusterer.predict(df_fit)
-        samples_preds = clusterer.predict(samples_fit)
-        centers = clusterer.cluster_centers_
-
+def visualize(clname, df_fit, samples_fit, preds, samples_preds, centers=None, df_plot=None, samples_plot=None, save=False):
     n = max(preds)-min(preds)+1
-
     sscore = silhouette_score(df_fit, preds, random_state=1)
     csscore = calinski_harabaz_score(df_fit, preds)  
     print("Clusters: {0}, silhouette = [{1:.4f}], calinski = [{2:.4f}]".format(n, sscore, csscore))
     
-    if plot:
+    f = plt.figure(); axf = f.gca();
+    name = 'FeatspaceSpace_' + clname + '_' + str(n)
+    f.suptitle(name)
+    clustplot(df_fit, preds, samples_fit, samples_preds, centers)
+
+    mng = plt.get_current_fig_manager()
+    mng.window.state('zoomed')
+    if save:
+        f.savefig('./Fig/'+name+'.png')
+
+    if not df_plot is None:
         f = plt.figure(); axf = f.gca();
-        name = 'FeatspaceSpace_' + clname + '_' + str(n)
+        name = 'OrigSpace_' + clname + '_' + str(n)
         f.suptitle(name)
-        clustplot(df_fit, preds, samples_fit, samples_preds)
+        clustplot(df_plot, preds, samples_plot, samples_preds, None)
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
-        if save:
+        if save: 
             f.savefig('./Fig/'+name+'.png')
-
-        if not df_plot is None:
-            f = plt.figure(); axf = f.gca();
-            name = 'OrigSpace_' + clname + '_' + str(n)
-            f.suptitle(name)
-            clustplot(df_plot, preds, samples_plot, samples_preds)
-            mng = plt.get_current_fig_manager()
-            mng.window.state('zoomed')
-            if save: 
-                f.savefig('./Fig/'+name+'.png')
 
     return preds
 

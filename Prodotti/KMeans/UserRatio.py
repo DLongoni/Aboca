@@ -64,7 +64,7 @@ if 1:
         samples_preds = clusterer.predict(samples_proc)
         centers = clusterer.cluster_centers_
 
-        Clust.visualize('KMeans', prod_feat, samples_proc, preds, samples_preds, centers, prod_visual, samples_visual, 1, 1)
+        Clust.visualize('KMeans', prod_feat, samples_proc, preds, samples_preds, centers, prod_visual, samples_visual, 1)
         plt.show()
         input('press enter')
 # }}}
@@ -78,6 +78,6 @@ if 0:
         samples_preds = clusterer.predict(df_samples_red)
         centers = clusterer.cluster_centers_
 
-        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 1, 0)
+        Clust.visualize('KMeans', df_red, df_samples_red, preds, samples_preds, centers, prod_visual, samples_visual, 0)
         input('press enter')
 # }}}
