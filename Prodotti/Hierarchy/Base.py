@@ -83,10 +83,9 @@ if 1:
         Ksamples_preds = Kclusterer.predict(samples_proc)
         Kcenters = Kclusterer.cluster_centers_
 
-        Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1)
-
-        plt.show()
-        input('press enter')
+        # Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1)
+        # plt.show()
+        # input('press enter')
 # }}}
 
 if 0:

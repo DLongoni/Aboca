@@ -127,4 +127,54 @@ def describe(df, clusters):
         print("*** Custer [{0}]".format(str(ic)))
         i_df = df.iloc[clusters==ic]
         print(i_df.describe())
+
+def cluster_diff(df_orig,df_clust,cl1,cl2,name1,name2):
+    clmap = cluster_mapping(cl1,cl2)
+    print("Cluster mapping: [{0}]".format(clmap))
+    s1 = silhouette_score(df_clust, cl1)
+    c1 = calinski_harabaz_score(df_clust, cl1)  
+    s2 = silhouette_score(df_clust, cl2)
+    c2 = calinski_harabaz_score(df_clust, cl2)  
+    print("Silhouette: [{0}]:[{1:.4f}]; [{2}]:[{3:.4f}]".format(name1,s1,name2,s2)) 
+    print("Calinski:   [{0}]:[{1:.4f}]; [{2}]:[{3:.4f}]".format(name1,c1,name2,c2)) 
+    for i in range(0,len(clmap)):
+        print("***** Comparing cluster [{0}-{1}] with cluster [{2}-{3}]".
+            format(clmap[i,0],name1,clmap[i,1],name2))
+        print("Describing cluster [{0}-{1}]".format(clmap[i,0],name1))
+        print(df_orig.iloc[cl1==i].describe())
+        print("Describing cluster [{0}-{1}]".format(clmap[i,1],name2))
+        print(df_orig.iloc[cl2==i].describe())
+        cl1notcl2 = np.logical_and(cl1==clmap[i,0], np.logical_not(cl2==clmap[i,1]))
+        if cl1notcl2.any():
+            print("Points that are in [{0}] but not in [{1}]".format(name1,name2))
+            print(df_orig.iloc[cl1notcl2])
+        else:
+            print("All points that are in [{0}] are in [{1}]".format(name1,name2))
+
+        cl2notcl1 = np.logical_and(cl2==clmap[i,1],np.logical_not(cl1==clmap[i,0]))
+        if cl2notcl1.any():
+            print("Points that are in [{0}] but not in [{1}]".format(name2,name1))
+            print(df_orig.iloc[cl2notcl1])
+        else:
+            print("All points that are in [{0}] are in [{1}]".format(name2,name1))
+
+def cluster_mapping(cl1,cl2):
+    n1 = max(cl1)-min(cl1)+1
+    n2 = max(cl2)-min(cl2)+1
+    if n1 != n2:
+        raise Exception("Different number of clusters")
+    clmap = np.zeros([n1,2])
+    for i in range(0,n1):
+        iSum = 0 
+        for j in range(0,n1):
+            nComp = np.logical_and(cl1==i,cl2==j)
+            if sum(nComp) > iSum:
+                iSelected = j 
+                iSum = sum(nComp)
+        if iSum < 0.5 * sum(cl1==i):
+            raise Exception("Can't determine cluster mapping")
+        clmap[i,0]=int(i)
+        clmap[i,1]=int(iSelected)
+    return clmap
+
 # }}}
