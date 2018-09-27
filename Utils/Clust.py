@@ -10,9 +10,7 @@ from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics import silhouette_score, calinski_harabaz_score
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-import Utils.Renders as rd
 import pandas as pd
-from DA import Prodotti
 from Utils import Features
 from Utils import Constants
 from IPython import embed

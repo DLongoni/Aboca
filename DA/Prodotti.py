@@ -76,7 +76,7 @@ def get_df_group_prod(df = None):
     # pd.plotting.scatter_matrix(prod,diagonal = 'kde')
     # pyplot.show()
     # nFarma e nUsers sono sostituibili
-    prod=prod[prod.nTot>2] # seleziono quelli su cui ha senso fare un'analisi. corretto o no?
+    prod=prod[prod.nTot>2].reset_index(drop=True) # seleziono quelli su cui ha senso fare un'analisi. corretto o no?
     return prod
 
 def get_df_group_prod_proc(prod = None):

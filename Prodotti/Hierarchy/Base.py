@@ -6,7 +6,6 @@
 
 # {{{ Import
 import numpy as np
-# from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import KMeans
 from scipy.cluster.hierarchy import linkage, fcluster
 from matplotlib import pyplot as plt
@@ -47,12 +46,12 @@ samples_id = [i for i in range(0,len(prod_proc)) if prod_proc.ProductId.iloc[i] 
 samples_orig = prod[prod.ProductId.isin(samples)]
 samples_proc = prod_proc[prod_proc.ProductId.isin(samples)].drop(['ProductId','Name'],axis=1)
 print('samples selezionati')
-display(samples_orig)
+print(samples_orig)
 
 samples_pca = pca.transform(samples_proc)
 df_samples_red =pd.DataFrame(samples_pca, columns = pca_results.index.values)
 print('samples trasformati')
-display(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.values))
+print(pd.DataFrame(np.round(samples_pca, 4), columns = pca_results.index.values))
 # }}}
 
 # Questa selezione colonne serve alla procedura di visualizzazione
@@ -71,6 +70,8 @@ if 1:
         linkage_m = linkage(prod_feat, 'ward')
         clusters = fcluster(linkage_m, n_clusters, criterion='maxclust') - 1
         samples_preds = clusters[samples_id]
+        print(samples_preds)
+        print(clusters)
         print('distances for the last 5 merges:\n{}'.format(linkage_m[-5:,2]))
         max_d = np.mean(linkage_m[-n_clusters:-(n_clusters-2),2])
         Clust.visualize('Agglo', prod_feat, samples_proc, clusters, samples_preds, None, prod_visual, samples_visual, 1)
@@ -84,8 +85,8 @@ if 1:
         Kcenters = Kclusterer.cluster_centers_
 
         # Clust.visualize('KMeans', prod_feat, samples_proc, Kpreds, Ksamples_preds, Kcenters, prod_visual, samples_visual, 1)
-        # plt.show()
-        # input('press enter')
+        plt.show()
+        input('press enter')
 # }}}
 
 if 0:
