@@ -26,6 +26,7 @@ class ClAnalyzer:
         self._name = name
         self._df_dic = {self.BASE_DF: df}
         self._clust_dic = {}
+        self._centers_dic = {}
         self._samples_column = 'index'
         self._samples_ids = None
         self._features = None
@@ -75,38 +76,38 @@ class ClAnalyzer:
             self._samples_column = 'index'
             self.samples_ids = samples_labels
 
-    def add_cluster(self, clust_arr, clust_name, n_clust):
-        key = self.__combine_name_n(clust_name, n_clust)
+    def add_cluster(self, clust_arr, clust_name, n_clust, **kwargs):
+        key     = self.__combine_name_n(clust_name, n_clust)
+        dataset = kwargs.get("df_name","")
+        centers = kwargs.get("df_name",None)
         if key in self._clust_dic:
             raise ValueError("Cluster with name [{0}] and n [{1}] " \
                 "already in the dictionary".format(clust_name,n_clust))
         if len(clust_arr) != self.n:
             raise ValueError("Cluster array have [{0}] elements, " \
                 "but the dataset have [{1}]".format(len(clust_arr),self.n))
-        self._clust_dic[key] = clust_arr
+        new_c = _Cluster(clust_name, n_clust=n_clust, labels=clust_arr, **kwargs)
+        self._clust_dic[key] = new_c
     # }}}
 
     # {{{ Getters
     def get_df(self, **kwargs):
         df_name = kwargs.get("df_name",self.BASE_DF)
+        feat_only = kwargs.get("feat_only",False)
         if not df_name in self._df_dic:
             raise KeyError('Dataframe [{0}] not set'.format(df_name))
-        return self._df_dic[df_name]
+        if feat_only:
+            if self._features is None:
+                raise Exception("Set features first")
+            return self._df_dic[df_name][self._features]
+        else:
+            return self._df_dic[df_name]
 
     @lru_cache(maxsize=10)
-    def get_df_samples(self, feat=False, **kwargs):
+    def get_df_samples(self, **kwargs):
         if self._samples_ids is None:
             raise Exception("Samples ids are not set")
-        if feat:
-            return self.get_df_feat(**kwargs).loc[self._samples_ids]
-        else:
-            return self.get_df(**kwargs).loc[self._samples_ids]
-
-    @lru_cache(maxsize=10)
-    def get_df_feat(self, **kwargs):
-        if self._features is None:
-            raise Exception("Set features first")
-        return self.get_df(**kwargs)[self._features]
+        return self.get_df(**kwargs).loc[self._samples_ids]
 
     @lru_cache(maxsize=10)
     def get_cluster(self, clust_name, n_clust):
@@ -117,14 +118,27 @@ class ClAnalyzer:
         return self._clust_dic[key]
 
     @lru_cache(maxsize=10)
-    def get_samples_cluster(self, clust_name, n_clust):
-        cl_tot = self.get_cluster(clust_name, n_clust)
+    def get_samples_labels(self, clust_name, n_clust):
+        cl_tot = self.get_cluster(clust_name, n_clust).labels
         return cl_tot[self._samples_ids]
+
+    def get_clust_centers(self, labels, clust_num=-1, **kwargs):
+        df = self.get_df(**kwargs)
+        n_clust = kwargs.get("n_clust",max(labels)+1) # useful when there is an empty cluster
+        centers = np.zeros([n_clust, len(df.columns)])
+        for iC in range(0,n_clust):
+            df_clust = df.loc[labels==iC]
+            centers[iC,:] = df_clust.mean().values
+
+        if clust_num == -1:
+            return centers
+        else:
+            return centers[clust_num,:]
     # }}}
 
     # {{{ Features
     def print_relevance(self, **kwargs):
-        df = self.get_df_feat(**kwargs)
+        df = self.get_df(**kwargs, feat_only=True)
         if self._features is None:
             raise Exception("Set features first")
         cols = self._features
@@ -138,7 +152,7 @@ class ClAnalyzer:
             print('Variable ', col,' predictability: ', score)
 
     def print_outliers(self, mode='iqr', **kwargs):
-        df_out = self.get_df_feat(**kwargs)
+        df_out = self.get_df(**kwargs, feat_only=True)
         df_plot = self.get_df()
         if self._features is None:
             raise Exception("Set features first")
@@ -169,29 +183,29 @@ class ClAnalyzer:
             .format(clust_name, n_clust))
         for ic in c_range:
             print("*** Custer labeled [{0}]".format(str(ic)))
-            i_df = df.iloc[clust==ic]
+            i_df = df.iloc[clust.labels==ic]
             print(i_df.describe())
 
     def print_sample_clusters(self, clust_name, n_clust, **kwargs):
-        samples_clust = self.get_samples_cluster(clust_name, n_clust)
-        df            = self.get_df(**kwargs)
-        s_range       = range(0, len(self._samples_ids))
+        samples_labels = self.get_samples_labels(clust_name, n_clust)
+        df             = self.get_df(**kwargs)
+        s_range        = range(0, len(self._samples_ids))
         print("*** Samples ***")
         print(self.get_df_samples(**kwargs))
         for i_s in s_range:
             print("Sample [{0}] is in cluster [{1}]"
-                .format(self._samples_ids[i_s], samples_clust[i_s]))
+                .format(self._samples_ids[i_s], samples_labels[i_s]))
 
     def print_cluster_diff(self, n_clust, name1, name2, df_name=None):
-        cl1     = self.get_cluster(name1, n_clust)
-        cl2     = self.get_cluster(name2, n_clust)
+        cl1     = self.get_cluster(name1, n_clust).labels
+        cl2     = self.get_cluster(name2, n_clust).labels
         clmap   = self.__cluster_mapping(cl1,cl2)
         df_orig = self.get_df()
         print("*** Comparing cluster [{0}] and [{1}] for [{2}] clusters ***"
             .format(name1, name2, n_clust))
         print("Cluster mapping: [\n{0}\n]".format(clmap))
         if not df_name is None:
-            df_score = self.get_df_feat(df_name=df_name)
+            df_score = self.get_df(df_name=df_name, feat_only=True)
             s1 = silhouette_score(df_score, cl1)
             c1 = calinski_harabaz_score(df_score, cl1)  
             s2 = silhouette_score(df_score, cl2)
@@ -202,9 +216,9 @@ class ClAnalyzer:
             print("***** Comparing cluster [{0}-{1}] with cluster [{2}-{3}]".
                 format(clmap[i,0],name1,clmap[i,1],name2))
             print("Describing cluster [{0}-{1}]".format(clmap[i,0],name1))
-            print(df_orig.iloc[cl1==i].describe())
+            print(df_orig.iloc[cl1==clmap[i,0]].describe())
             print("Describing cluster [{0}-{1}]".format(clmap[i,1],name2))
-            print(df_orig.iloc[cl2==i].describe())
+            print(df_orig.iloc[cl2==clmap[i,1]].describe())
             cl1notcl2 = np.logical_and(cl1==clmap[i,0], np.logical_not(cl2==clmap[i,1]))
             if cl1notcl2.any():
                 print("Points that are in [{0}] but not in [{1}]".format(name1,name2))
@@ -221,21 +235,31 @@ class ClAnalyzer:
     # }}}
 
     # {{{ Plot clusters
-    def visualize(self, cl_name, n_clust, centers=None, save=False, **kwargs):
+    def plot_cluster_diff(self, n_clust, name1, name2, save=False, **kwargs):
         f = plt.figure(); axf = f.gca();
         df_name = kwargs.get("df_name",self.BASE_DF)
-        plotname = cl_name + "_" + str(n_clust) + "_" + df_name 
+        cl1     = self.get_cluster(name1, n_clust).labels
+        cl2     = self.get_cluster(name2, n_clust).labels
+        clmap   = self.__cluster_mapping(cl1,cl2)
+        df_orig = self.get_df()
+        print("*** Comparing cluster [{0}] and [{1}] for [{2}] clusters ***"
+            .format(name1, name2, n_clust))
+        print("Cluster mapping: [\n{0}\n]".format(clmap))
+        f = plt.figure(); axf = f.gca();
+
+        plotname = name1 + "_vs_" + name2 + "_" + str(n_clust) + "_" + df_name 
         f.suptitle(plotname)
 
-        ncol = len(self._features)
+        ncol = len(self.get_df(**kwargs).columns)
         if ncol == 2:
-            self.add_cluster_plot(cl_name, n_clust, [0,1], centers, None, **kwargs)
+            self.add_cluster_plot(name1, n_clust, [0,1], 121, **kwargs)
+            self.add_cluster_plot(name2, n_clust, [0,1], 122, **kwargs)
         else:
-            iter_sub  = [221,222,223,224]
             iter_cols = self.__select_plot_cols(ncol)
-            for i in range(0,4):
-                sp = iter_sub[i]
-                self.add_cluster_plot(cl_name, n_clust, iter_cols[i], centers, sp, **kwargs)
+            self.add_cluster_plot(name1, n_clust, iter_cols[0], 221, **kwargs)
+            self.add_cluster_plot(name2, n_clust, iter_cols[0], 222, cluster_map=clmap[:,1], **kwargs)
+            self.add_cluster_plot(name1, n_clust, iter_cols[1], 223, **kwargs)
+            self.add_cluster_plot(name2, n_clust, iter_cols[1], 224, cluster_map=clmap[:,1], **kwargs)
 
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
@@ -243,28 +267,53 @@ class ClAnalyzer:
             f.savefig(Constants.pic_path+plotname+'.png')
         plt.show()
 
-    def add_cluster_plot(self, cl_name, n_clust, iter_cols, centers, sub_num=None, **kwargs):
-        df = self.get_df_feat(**kwargs)
-        df_samples = self.get_df_samples(True, **kwargs)
-        clust = self.get_cluster(cl_name, n_clust)
-        samples_clust = self.get_samples_cluster(cl_name, n_clust)
+    def plot_cluster(self, cl_name, n_clust, save=False, **kwargs):
+        f = plt.figure(); axf = f.gca();
+        df_name = kwargs.get("df_name",self.BASE_DF)
+        plotname = cl_name + "_" + str(n_clust) + "_" + df_name 
+        f.suptitle(plotname)
+
+        ncol = len(self.get_df(**kwargs).columns)
+        if ncol == 2:
+            self.add_cluster_plot(cl_name, n_clust, [0,1], None, **kwargs)
+        else:
+            iter_sub  = [221,222,223,224]
+            iter_cols = self.__select_plot_cols(ncol)
+            for i in range(0,4):
+                sp = iter_sub[i]
+                self.add_cluster_plot(cl_name, n_clust, iter_cols[i], sp, **kwargs)
+
+        mng = plt.get_current_fig_manager()
+        mng.window.state('zoomed')
+        if save:
+            f.savefig(Constants.pic_path+plotname+'.png')
+        plt.show()
+
+    def add_cluster_plot(self, cl_name, n_clust, iter_cols, sub_num=None, **kwargs):
+        cluster_map = kwargs.pop('cluster_map',[])
+        df = self.get_df(**kwargs)
+        df_samples = self.get_df_samples(**kwargs)
+        clust = self.get_cluster(cl_name, n_clust).labels
+        if len(cluster_map) > 0:
+            clust = np.asarray([cluster_map[i_cl] for i_cl in clust])
+        samples_labels = self.get_samples_labels(cl_name, n_clust)
         col1 = df.columns[iter_cols[0]]
         col2 = df.columns[iter_cols[1]]
 
         c_tot = [Constants.colors[i] for i in clust]
-        c_samp = [Constants.colors[i] for i in samples_clust]
+        c_samp = [Constants.colors[i] for i in samples_labels]
         if sub_num:
             plt.subplot(sub_num) 
         plt.scatter(x=df[col1],y=df[col2],c=c_tot) 
         plt.scatter(x=df_samples[col1],y=df_samples[col2], lw=1, 
             facecolor=c_samp,marker='D',edgecolors='black') 
-        if not centers is None:
-            plt.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
-                facecolor=Constants.colors[0:n],marker='X',edgecolors='k',s=150)
+
+        centers = self.get_clust_centers(clust, n_clust=n_clust, **kwargs)
+        plt.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
+            facecolor=Constants.colors[0:n_clust],marker='X',edgecolors='k',s=150)
 
         plt.xlabel(col1)
         plt.ylabel(col2)
-
     # }}}
 
     # {{{ Private helpers
@@ -306,6 +355,48 @@ class ClAnalyzer:
         clmap = clmap.astype(int)
         return clmap
     # }}}
+
+# {{{ Cluster class
+class _Cluster:
+    def __init__(self, name, **kwargs):
+        self._name    = name
+        self._labels  = kwargs.get("labels",[])
+        self._centers = kwargs.get("centers",[])
+        self._dataset = kwargs.get("dataset","")
+        self._n_clust = kwargs.get("n_clust","")
+
+    @property
+    def labels(self):
+        return self._labels
+    @labels.setter
+    def labels(self, value):
+        self._labels = value
+
+    @property
+    def centers(self):
+        return self._centers
+    @centers.setter
+    def centers(self, value):
+        self._centers = value
+
+    @property
+    def dataset(self):
+        return self._dataset
+    @dataset.setter
+    def dataset(self, value):
+        self._dataset = value
+
+    @property
+    def n_clust(self):
+        return self._n_clust
+    @n_clust.setter
+    def n_clust(self, value):
+        self._n_clust = value
+
+    @property
+    def name(self):
+        return self._name
+# }}}
 
 if __name__=='__main__':
     prod = Prodotti.get_df_group_prod()
