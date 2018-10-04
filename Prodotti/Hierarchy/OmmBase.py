@@ -67,11 +67,12 @@ if 1:
         # input('press enter')
 # }}}
 
-# CA.plot_cluster('kmeans',2)
+# CA.plot_cluster('kmeans',2,feat_only=True)
 # CA.plot_cluster('agglo',3,df_name='scaled',feat_only=True)
 # CA.plot_cluster('kmeans_pca',3,df_name='pca')
 # CA.plot_cluster('kmeans_pca',3,feat_only=True)
 CA.describe_clusters('kmeans',2)
 CA.print_sample_clusters('kmeans',3)
 CA.print_cluster_diff(2,'kmeans','agglo')
+# CA.plot_cluster_diff(2,'agglo','kmeans',feat_only=True)
 embed()

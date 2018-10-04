@@ -2,6 +2,7 @@
 
 # {{{ Import
 import numpy as np
+import itertools
 import seaborn as sns; sns.set()
 from sklearn.cluster import KMeans
 from scipy.cluster.hierarchy import dendrogram
@@ -236,7 +237,6 @@ class ClAnalyzer:
 
     # {{{ Plot clusters
     def plot_cluster_diff(self, n_clust, name1, name2, save=False, **kwargs):
-        f = plt.figure(); axf = f.gca();
         df_name = kwargs.get("df_name",self.BASE_DF)
         cl1     = self.get_cluster(name1, n_clust).labels
         cl2     = self.get_cluster(name2, n_clust).labels
@@ -245,22 +245,24 @@ class ClAnalyzer:
         print("*** Comparing cluster [{0}] and [{1}] for [{2}] clusters ***"
             .format(name1, name2, n_clust))
         print("Cluster mapping: [\n{0}\n]".format(clmap))
-        f = plt.figure(); axf = f.gca();
-
-        plotname = name1 + "_vs_" + name2 + "_" + str(n_clust) + "_" + df_name 
-        f.suptitle(plotname)
 
         ncol = len(self.get_df(**kwargs).columns)
         if ncol == 2:
-            self.add_cluster_plot(name1, n_clust, [0,1], 121, **kwargs)
-            self.add_cluster_plot(name2, n_clust, [0,1], 122, **kwargs)
+            f, axarr = plt.subplots(1,2);
+            self.add_cluster_plot(name1, n_clust, [0,1], axarr[0,0], **kwargs)
+            self.add_cluster_plot(name2, n_clust, [0,1], axarr[0,1], **kwargs)
         else:
+            f, axarr = plt.subplots(2,2);
             iter_cols = self.__select_plot_cols(ncol)
-            self.add_cluster_plot(name1, n_clust, iter_cols[0], 221, **kwargs)
-            self.add_cluster_plot(name2, n_clust, iter_cols[0], 222, cluster_map=clmap[:,1], **kwargs)
-            self.add_cluster_plot(name1, n_clust, iter_cols[1], 223, **kwargs)
-            self.add_cluster_plot(name2, n_clust, iter_cols[1], 224, cluster_map=clmap[:,1], **kwargs)
+            self.add_cluster_plot(name1, n_clust, iter_cols[0], axarr[0,0], **kwargs)
+            self.add_cluster_plot(name2, n_clust, iter_cols[0], axarr[0,1], cluster_map=clmap[:,1], **kwargs)
+            self.add_cluster_plot(name1, n_clust, iter_cols[1], axarr[1,0], **kwargs)
+            self.add_cluster_plot(name2, n_clust, iter_cols[1], axarr[1,1], cluster_map=clmap[:,1], **kwargs)
+        axarr[0,0].set_title(name1, fontweight='bold', fontsize=16)
+        axarr[0,1].set_title(name2, fontweight='bold', fontsize=16)
 
+        plotname = name1 + "_vs_" + name2 + "_" + str(n_clust) + "_" + df_name 
+        f.suptitle(plotname)
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
         if save:
@@ -268,20 +270,19 @@ class ClAnalyzer:
         plt.show()
 
     def plot_cluster(self, cl_name, n_clust, save=False, **kwargs):
-        f = plt.figure(); axf = f.gca();
         df_name = kwargs.get("df_name",self.BASE_DF)
         plotname = cl_name + "_" + str(n_clust) + "_" + df_name 
-        f.suptitle(plotname)
 
         ncol = len(self.get_df(**kwargs).columns)
         if ncol == 2:
-            self.add_cluster_plot(cl_name, n_clust, [0,1], None, **kwargs)
+            f, ax = plt.subplots()
+            self.add_cluster_plot(cl_name, n_clust, ax, None, **kwargs)
         else:
-            iter_sub  = [221,222,223,224]
+            f, axarr = plt.subplots(2,2);
             iter_cols = self.__select_plot_cols(ncol)
-            for i in range(0,4):
-                sp = iter_sub[i]
-                self.add_cluster_plot(cl_name, n_clust, iter_cols[i], sp, **kwargs)
+            for ax_ids, it_cols in zip(itertools.product([0,1],[0,1]), iter_cols):
+                self.add_cluster_plot(cl_name, n_clust, it_cols, axarr[ax_ids], **kwargs)
+        f.suptitle(plotname)
 
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
@@ -289,31 +290,30 @@ class ClAnalyzer:
             f.savefig(Constants.pic_path+plotname+'.png')
         plt.show()
 
-    def add_cluster_plot(self, cl_name, n_clust, iter_cols, sub_num=None, **kwargs):
+    def add_cluster_plot(self, cl_name, n_clust, iter_cols, ax, **kwargs):
         cluster_map = kwargs.pop('cluster_map',[])
         df = self.get_df(**kwargs)
         df_samples = self.get_df_samples(**kwargs)
         clust = self.get_cluster(cl_name, n_clust).labels
+        samples_labels = self.get_samples_labels(cl_name, n_clust)
         if len(cluster_map) > 0:
             clust = np.asarray([cluster_map[i_cl] for i_cl in clust])
-        samples_labels = self.get_samples_labels(cl_name, n_clust)
+            samples_labels = np.asarray([cluster_map[i_cl] for i_cl in samples_labels])
         col1 = df.columns[iter_cols[0]]
         col2 = df.columns[iter_cols[1]]
 
         c_tot = [Constants.colors[i] for i in clust]
         c_samp = [Constants.colors[i] for i in samples_labels]
-        if sub_num:
-            plt.subplot(sub_num) 
-        plt.scatter(x=df[col1],y=df[col2],c=c_tot) 
-        plt.scatter(x=df_samples[col1],y=df_samples[col2], lw=1, 
+        ax.scatter(x=df[col1],y=df[col2],c=c_tot) 
+        ax.scatter(x=df_samples[col1],y=df_samples[col2], lw=1, 
             facecolor=c_samp,marker='D',edgecolors='black') 
 
         centers = self.get_clust_centers(clust, n_clust=n_clust, **kwargs)
-        plt.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
+        ax.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
             facecolor=Constants.colors[0:n_clust],marker='X',edgecolors='k',s=150)
 
-        plt.xlabel(col1)
-        plt.ylabel(col2)
+        ax.set_xlabel(col1)
+        ax.set_ylabel(col2)
     # }}}
 
     # {{{ Private helpers
