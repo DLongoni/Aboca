@@ -23,8 +23,7 @@ from DA import Prodotti
 class ClAnalyzer:
     BASE_DF = 'base'
 
-    def __init__(self, name, df):
-        self._name = name
+    def __init__(self, df):
         self._df_dic = {self.BASE_DF: df}
         self._clust_dic = {}
         self._centers_dic = {}
@@ -33,10 +32,9 @@ class ClAnalyzer:
         self._features = None
 
     # {{{ Properties
-    @property
-    def name(self):
-        return self._name
-
+    # TODO: think about this. Features are here just for convenience, but 
+    # all the methods that use features in practice allow for other 
+    # features to be given...
     @property
     def features(self):
         return self._features
@@ -92,15 +90,19 @@ class ClAnalyzer:
     # }}}
 
     # {{{ Getters
+    @lru_cache(maxsize=10)
     def get_df(self, **kwargs):
         df_name = kwargs.get("df_name",self.BASE_DF)
-        feat_only = kwargs.get("feat_only",False)
+        feat_cols = kwargs.get("feat_cols",False)
+        cols = list(kwargs.get("cols",[]))
         if not df_name in self._df_dic:
             raise KeyError('Dataframe [{0}] not set'.format(df_name))
-        if feat_only:
+        if feat_cols:
             if self._features is None:
                 raise Exception("Set features first")
             return self._df_dic[df_name][self._features]
+        elif len(cols)>0:
+            return self._df_dic[df_name][cols]
         else:
             return self._df_dic[df_name]
 
@@ -138,11 +140,14 @@ class ClAnalyzer:
     # }}}
 
     # {{{ Features
-    def print_relevance(self, **kwargs):
-        df = self.get_df(**kwargs, feat_only=True)
-        if self._features is None:
-            raise Exception("Set features first")
-        cols = self._features
+    def print_relevance(self, features=None, **kwargs):
+        df = self.get_df(**kwargs, feat_cols=True)
+        if not features is None:
+            cols = self._features
+        else:
+            if self._features is None:
+                raise Exception("Set features first")
+            cols = self._features
         print("Relevance analysis for features [{0}]".format(' '.join(cols)))
         for col in cols:
             new_data = df.drop(col, axis=1)
@@ -152,12 +157,16 @@ class ClAnalyzer:
             score = regressor.score(X_test, y_test)
             print('Variable ', col,' predictability: ', score)
 
-    def print_outliers(self, mode='iqr', **kwargs):
-        df_out = self.get_df(**kwargs, feat_only=True)
+    # mode = "iqr" or "2perc"
+    def print_outliers(self, mode='iqr', features=None, **kwargs):
+        df_out = self.get_df(**kwargs, feat_cols=True)
         df_plot = self.get_df()
-        if self._features is None:
-            raise Exception("Set features first")
-        cols = self._features
+        if not features is None:
+            cols = self._features
+        else:
+            if self._features is None:
+                raise Exception("Set features first")
+            cols = self._features
         print("Outlier analysis for features [{0}]".format(' '.join(cols)))
         for col in cols:
             if mode == 'iqr':
@@ -197,7 +206,7 @@ class ClAnalyzer:
             print("Sample [{0}] is in cluster [{1}]"
                 .format(self._samples_ids[i_s], samples_labels[i_s]))
 
-    def print_cluster_diff(self, n_clust, name1, name2, df_name=None):
+    def print_cluster_diff(self, n_clust, name1, name2, df_name=None, features=None):
         cl1     = self.get_cluster(name1, n_clust).labels
         cl2     = self.get_cluster(name2, n_clust).labels
         clmap   = self.__cluster_mapping(cl1,cl2)
@@ -206,7 +215,10 @@ class ClAnalyzer:
             .format(name1, name2, n_clust))
         print("Cluster mapping: [\n{0}\n]".format(clmap))
         if not df_name is None:
-            df_score = self.get_df(df_name=df_name, feat_only=True)
+            if features is None:
+                df_score = self.get_df(df_name=df_name, feat_cols=True)
+            else: 
+                df_score = self.get_df(df_name=df_name, cols=features)
             s1 = silhouette_score(df_score, cl1)
             c1 = calinski_harabaz_score(df_score, cl1)  
             s2 = silhouette_score(df_score, cl2)
@@ -276,7 +288,7 @@ class ClAnalyzer:
         ncol = len(self.get_df(**kwargs).columns)
         if ncol == 2:
             f, ax = plt.subplots()
-            self.add_cluster_plot(cl_name, n_clust, ax, None, **kwargs)
+            self.add_cluster_plot(cl_name, n_clust, [0,1], ax, **kwargs)
         else:
             f, axarr = plt.subplots(2,2);
             iter_cols = self.__select_plot_cols(ncol)
@@ -292,6 +304,7 @@ class ClAnalyzer:
 
     def add_cluster_plot(self, cl_name, n_clust, iter_cols, ax, **kwargs):
         cluster_map = kwargs.pop('cluster_map',[])
+        samples_label_col = kwargs.pop('samples_label_col',"")
         df = self.get_df(**kwargs)
         df_samples = self.get_df_samples(**kwargs)
         clust = self.get_cluster(cl_name, n_clust).labels
@@ -307,6 +320,11 @@ class ClAnalyzer:
         ax.scatter(x=df[col1],y=df[col2],c=c_tot) 
         ax.scatter(x=df_samples[col1],y=df_samples[col2], lw=1, 
             facecolor=c_samp,marker='D',edgecolors='black') 
+        if samples_label_col != "":
+            df_samples_labels = self.get_df_samples(cols=(samples_label_col,))
+            for x, y, l in zip(df_samples[col1], df_samples[col2], df_samples_labels.values[:,0]):
+                compr_l = l[0:20] if len(l) < 20 else l[0:17] + '...'
+                ax.text(x,y,compr_l,fontsize=10,ha='center')
 
         centers = self.get_clust_centers(clust, n_clust=n_clust, **kwargs)
         ax.scatter(centers[:,iter_cols[0]],centers[:,iter_cols[1]], lw=1,
