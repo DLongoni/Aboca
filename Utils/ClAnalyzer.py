@@ -4,6 +4,7 @@
 import numpy as np
 import itertools
 import seaborn as sns; sns.set()
+import logging
 from sklearn.cluster import KMeans
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics import silhouette_score, calinski_harabaz_score
@@ -78,7 +79,6 @@ class ClAnalyzer:
     def add_cluster(self, clust_arr, clust_name, n_clust, **kwargs):
         key     = self.__combine_name_n(clust_name, n_clust)
         dataset = kwargs.get("df_name","")
-        centers = kwargs.get("df_name",None)
         if key in self._clust_dic:
             raise ValueError("Cluster with name [{0}] and n [{1}] " \
                 "already in the dictionary".format(clust_name,n_clust))
@@ -185,6 +185,15 @@ class ClAnalyzer:
     # }}}
 
     # {{{ Print clusters
+    def print_scores(self, **kwargs):
+        df_score = self.get_df(**kwargs)
+        for key, val in self._clust_dic.items():
+            s = silhouette_score(df_score, val.labels)
+            c = calinski_harabaz_score(df_score, val.labels)  
+            print("Scores for cluster [{0}]".format(key))
+            print("\t silhouette: [{0:.4f}]".format(s))
+            print("\t calinski  : [{0:.4f}]".format(c))
+
     def describe_clusters(self, clust_name, n_clust, **kwargs):
         clust      = self.get_cluster(clust_name, n_clust)
         df         = self.get_df(**kwargs)
@@ -227,19 +236,19 @@ class ClAnalyzer:
             print("Calinski:   [{0}]:[{1:.4f}]; [{2}]:[{3:.4f}]".format(name1,c1,name2,c2)) 
         for i in range(0,len(clmap)):
             print("***** Comparing cluster [{0}-{1}] with cluster [{2}-{3}]".
-                format(clmap[i,0],name1,clmap[i,1],name2))
-            print("Describing cluster [{0}-{1}]".format(clmap[i,0],name1))
-            print(df_orig.iloc[cl1==clmap[i,0]].describe())
-            print("Describing cluster [{0}-{1}]".format(clmap[i,1],name2))
-            print(df_orig.iloc[cl2==clmap[i,1]].describe())
-            cl1notcl2 = np.logical_and(cl1==clmap[i,0], np.logical_not(cl2==clmap[i,1]))
+                format(i,name1,clmap[i],name2))
+            print("Describing cluster [{0}-{1}]".format(i,name1))
+            print(df_orig.iloc[cl1==i].describe())
+            print("Describing cluster [{0}-{1}]".format(clmap[1],name2))
+            print(df_orig.iloc[cl2==clmap[1]].describe())
+            cl1notcl2 = np.logical_and(cl1==i, np.logical_not(cl2==clmap[i]))
             if cl1notcl2.any():
                 print("Points that are in [{0}] but not in [{1}]".format(name1,name2))
                 print(df_orig.iloc[cl1notcl2])
             else:
                 print("All points that are in [{0}] are in [{1}]".format(name1,name2))
 
-            cl2notcl1 = np.logical_and(cl2==clmap[i,1],np.logical_not(cl1==clmap[i,0]))
+            cl2notcl1 = np.logical_and(cl2==clmap[i],np.logical_not(cl1==i))
             if cl2notcl1.any():
                 print("Points that are in [{0}] but not in [{1}]".format(name2,name1))
                 print(df_orig.iloc[cl2notcl1])
@@ -250,30 +259,35 @@ class ClAnalyzer:
     # {{{ Plot clusters
     def plot_cluster_diff(self, n_clust, name1, name2, save=False, **kwargs):
         df_name = kwargs.get("df_name",self.BASE_DF)
+        n_clust2 = kwargs.get("n_clust2",n_clust)
         cl1     = self.get_cluster(name1, n_clust).labels
-        cl2     = self.get_cluster(name2, n_clust).labels
-        clmap   = self.__cluster_mapping(cl1,cl2)
+        cl2     = self.get_cluster(name2, n_clust2).labels
         df_orig = self.get_df()
-        print("*** Comparing cluster [{0}] and [{1}] for [{2}] clusters ***"
-            .format(name1, name2, n_clust))
-        print("Cluster mapping: [\n{0}\n]".format(clmap))
+        print("*** Comparing cluster [{0}] for [{2}] clusters and [{1}] for [{3}] clusters ***"
+            .format(name1, name2, n_clust, n_clust2))
+        clmap =[]
+        if n_clust == n_clust2:
+            clmap = self.__cluster_mapping(cl1,cl2)
+            print("Cluster mapping: [\n{0}\n]".format(clmap))
 
         ncol = len(self.get_df(**kwargs).columns)
         if ncol == 2:
             f, axarr = plt.subplots(1,2);
-            self.add_cluster_plot(name1, n_clust, [0,1], axarr[0,0], **kwargs)
-            self.add_cluster_plot(name2, n_clust, [0,1], axarr[0,1], **kwargs)
+            self.add_cluster_plot(name1, n_clust, [0,1], axarr[0], cluster_map=clmap, **kwargs)
+            self.add_cluster_plot(name2, n_clust2, [0,1], axarr[1], **kwargs)
+            axarr[0].set_title(name1, fontweight='bold', fontsize=16)
+            axarr[1].set_title(name2, fontweight='bold', fontsize=16)
         else:
             f, axarr = plt.subplots(2,2);
             iter_cols = self.__select_plot_cols(ncol)
-            self.add_cluster_plot(name1, n_clust, iter_cols[0], axarr[0,0], **kwargs)
-            self.add_cluster_plot(name2, n_clust, iter_cols[0], axarr[0,1], cluster_map=clmap[:,1], **kwargs)
-            self.add_cluster_plot(name1, n_clust, iter_cols[1], axarr[1,0], **kwargs)
-            self.add_cluster_plot(name2, n_clust, iter_cols[1], axarr[1,1], cluster_map=clmap[:,1], **kwargs)
-        axarr[0,0].set_title(name1, fontweight='bold', fontsize=16)
-        axarr[0,1].set_title(name2, fontweight='bold', fontsize=16)
+            self.add_cluster_plot(name1, n_clust, iter_cols[0], axarr[0,0], cluster_map=clmap, **kwargs)
+            self.add_cluster_plot(name2, n_clust2, iter_cols[0], axarr[0,1], **kwargs)
+            self.add_cluster_plot(name1, n_clust, iter_cols[1], axarr[1,0], cluster_map=clmap, **kwargs)
+            self.add_cluster_plot(name2, n_clust2, iter_cols[1], axarr[1,1], **kwargs)
+            axarr[0,0].set_title(name1+str(n_clust), fontweight='bold', fontsize=16)
+            axarr[0,1].set_title(name2+str(n_clust2), fontweight='bold', fontsize=16)
 
-        plotname = name1 + "_vs_" + name2 + "_" + str(n_clust) + "_" + df_name 
+        plotname = name1 + str(n_clust) + "_vs_" + name2 + "_" + str(n_clust2) + "_" + df_name 
         f.suptitle(plotname)
         mng = plt.get_current_fig_manager()
         mng.window.state('zoomed')
@@ -356,21 +370,21 @@ class ClAnalyzer:
     def __cluster_mapping(cls, cl1, cl2):
         n1 = max(cl1)-min(cl1)+1
         n2 = max(cl2)-min(cl2)+1
+        clmap = []
         if n1 != n2:
             raise Exception("Different number of clusters")
-        clmap = np.zeros([n1,2])
         for i in range(0,n1):
             iSum = 0 
             for j in range(0,n1):
-                nComp = np.logical_and(cl1==i,cl2==j)
-                if sum(nComp) > iSum:
-                    iSelected = j 
-                    iSum = sum(nComp)
+                if not j in clmap:
+                    nComp = np.logical_and(cl1==i,cl2==j)
+                    if sum(nComp) > iSum:
+                        iSelected = j 
+                        iSum = sum(nComp)
             if iSum < 0.5 * sum(cl1==i):
-                raise Exception("Can't determine cluster mapping")
-            clmap[i,0]=i
-            clmap[i,1]=iSelected
-        clmap = clmap.astype(int)
+                logging.warn("Can't determine cluster mapping")
+                return []
+            clmap.append(iSelected)
         return clmap
     # }}}
 
