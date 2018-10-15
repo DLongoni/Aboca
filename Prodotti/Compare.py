@@ -75,7 +75,7 @@ if 1:
         CA.add_cluster(Kpreds, 'kmeans', n_clusters, dataset='scaled')
 
         Kclusterer3 = KMeans(n_clusters=n_clusters, random_state=1)
-        Kpreds3 = Kclusterer.fit_predict(CA.get_df(
+        Kpreds3 = Kclusterer3.fit_predict(CA.get_df(
             df_name='scaled', cols=tuple(features3)))
         CA.add_cluster(Kpreds3, 'kmeans3', n_clusters, dataset='scaled')
 
