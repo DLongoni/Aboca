@@ -27,7 +27,7 @@ def get_df():
     return df
 
 
-def get_df_group_prod(df=None):
+def get_df_group_prod(df=None, include_rare=False):
     if df is None:
         df = get_df()
     # Names
@@ -81,7 +81,8 @@ def get_df_group_prod(df=None):
     # pyplot.show()
     # nFarma e nUsers sono sostituibili
     # seleziono quelli su cui ha senso fare un'analisi. corretto o no?
-    prod = prod[prod.nTot > 2].reset_index(drop=True)
+    if not include_rare:
+        prod = prod[prod.nTot > 2].reset_index(drop=True)
     return prod
 
 
