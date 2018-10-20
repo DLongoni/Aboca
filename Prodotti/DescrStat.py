@@ -17,15 +17,6 @@ sns.set_style('ticks')
 # {{{ Caricamneto dati
 data_tot = Prodotti.get_df()
 data = data_tot.copy(deep=True)
-
-# Product names
-names = data_tot[['ProductId', 'ProductName', 'ProductFormat']]
-names = names.groupby('ProductId')['ProductName',
-                                   'ProductFormat'].first().reset_index()
-names['Name'] = names['ProductName'] + ' ' + names['ProductFormat']
-names.drop(['ProductName', 'ProductFormat'], axis=1, inplace=True)
-data_tot = pd.merge(data_tot, names)
-data_tot.drop(['ProductName', 'ProductFormat'], axis=1, inplace=True)
 # }}}
 
 # {{{ Grafico prodotti piu frequenti
@@ -38,11 +29,11 @@ data.drop(['ProductReplaced', 'CreationTime', 'Id'], axis=1, inplace=True)
 def freq_hist(df):
     # sns.set_style('darkgrid')
     plt.ion()
-    f = plt.figure()
+    f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     dfp = df.sort_values('nTot')
     ax.barh(dfp.ProductId, dfp.Ratio*100)
-    for i, (i_name, i_tot) in enumerate(zip(dfp.Name, dfp.nTot)):
+    for i, (i_name, i_tot) in enumerate(zip(dfp.ProdName, dfp.nTot)):
 
         i_lbl = "{0} - {1}".format(i_tot, i_name)
         ax.text(1, i, i_lbl, color="w", va="center", size=16)
@@ -80,8 +71,8 @@ if 1:
     df_rari = Prodotti.get_df_group_prod(include_rare=True).sort_values('nTot')
     p_rari = df_rari[df_rari.nTot <= df_rari.nTot.quantile(.1)]
     print('*** Prodotti consigliati rarmente ***')
-    print(p_rari[['Name', 'nTot']])
-    csv_rari = p_rari[['Name', 'nTot']].to_csv()
+    print(p_rari[['ProdName', 'nTot']])
+    csv_rari = p_rari[['ProdName', 'nTot']].to_csv()
 # }}}
 
 
@@ -136,16 +127,16 @@ uh_day = uh_day.fillna(0)  # user history
 # }}}
 
 # {{{ Analisi per avatar
-av = rwcount(data_tot, 'AvId')
+av = rwcount(data_tot, 'AvSessId')
 av_top = av[av.TotCount >= av.TotCount.quantile(.80)]
 avpce = Avatar.get_avatar_pce()
-av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvId')
-av_top_pce.drop(['SessionId', 'AvatarId'], axis=1, inplace=True)
+av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
+# av_top_pce.drop(['SessionId', 'AvatarId'], axis=1, inplace=True)
 
 
 def av_freq_hist(df):
     plt.ion()
-    f = plt.figure()
+    f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     dfp = df.sort_values('TotCount')
     ax.barh(range(0, len(dfp)), dfp.Ratio*100)
@@ -163,9 +154,10 @@ def av_freq_hist(df):
         l_hand.append(i_patch)
 
     ax.legend(handles=l_hand)
-    for i, (i_id, i_tot) in enumerate(zip(dfp.AvId, dfp.TotCount)):
+    for i, (i_name, i_tot, i_sess) in enumerate(
+            zip(dfp.AvName, dfp.TotCount, dfp.SessionId)):
 
-        i_lbl = "{0} - Av{1}".format(i_tot, i_id)
+        i_lbl = "{0} - {1} - {2}".format(i_tot, i_name, i_sess)
         ax.text(1, i-0.1, i_lbl, color="k", va="center", size=11)
 
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
@@ -197,7 +189,7 @@ def av_freq_hist(df):
 
 # av_bad = av_top[av_top.Ratio<0.15]
 av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].index.values)
-df_av_worst = data_tot[data_tot.AvId == av_worst]
+df_av_worst = data_tot[data_tot.AvSessId == av_worst]
 # i pochi che hanno azzeccato questo avatar
 df_av_w_right = df_av_worst[df_av_worst.ProductType == 'RightProduct']
 df_av_w_wrong = df_av_worst[df_av_worst.ProductType == 'WrongProduct']
@@ -218,7 +210,7 @@ pce_t = 5
 data_rwt = data_tot[data_tot.AvatarPce == pce_t]
 spce = rwcount(data_rwt, 'ProductId')
 # analisi per pce, per avatar
-apce = rwcount(data_rwt, 'AvId')
+apce = rwcount(data_rwt, 'AvSessId')
 # }}}
 
 # {{{ Analisi per utente

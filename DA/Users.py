@@ -1,29 +1,30 @@
 #!/usr/bin/env python
 
 import pandas as pd
+from IPython import embed # NOQA
 
 
 def get_users_table():
     # utenti
-    u = pd.read_csv('./Dataset/Dumps/out_AbpUsers.csv')
+    u = pd.read_csv('./Dataset/Dumps/out_qAbpUsers.csv', sep='$')
     # farmacie
-    f = pd.read_csv('./Dataset/Dumps/out_VrCustomers.csv')
+    f = pd.read_csv('./Dataset/Dumps/out_qVrCustomers.csv', sep='$')
     # province
-    p = pd.read_csv('./Dataset/Dumps/out_Province.csv')
+    p = pd.read_csv('./Dataset/Dumps/out_qProvince.csv', sep='$')
     # regioni
-    r = pd.read_csv('./Dataset/Dumps/out_Regioni.csv')
+    r = pd.read_csv('./Dataset/Dumps/out_qRegioni.csv', sep='$')
     # userroles
-    ur = pd.read_csv('./Dataset/Dumps/out_AbpUserroles.csv', sep='|')
+    ur = pd.read_csv('./Dataset/Dumps/out_qAbpUserroles.csv', sep='$')
 
-    u.drop(['UserName', 'Password', 'EmailAddress', 'LastLoginTime',
-            'PersonId', 'PhANCustomerId'], axis=1, inplace=True)
+    u = u[['Id', 'ClientCode', 'PdcCode']]
     u.rename(columns={'Id': 'UserId'}, inplace=True)
     u = u[~u.ClientCode.isnull()]
     u['UserId'] = u.UserId.astype(int)
-    f.drop(['TenantId', 'Cap', 'Latitude'], axis=1, inplace=True)
+    f = f[['Id', 'Code', 'PdcCode', 'Province']]
     f.rename(columns={'Id': 'FarmaId'}, inplace=True)
     f.rename(columns={'Province': 'ProvId'}, inplace=True)
     p.drop(['Id', 'Nome', 'Longitudine'], axis=1, inplace=True)
+    p = p[['Id_Regione', 'Sigla_automobilistica', 'Latitudine']]
     p.rename(columns={'Sigla_automobilistica': 'ProvId'}, inplace=True)
     r['Nome'] = r.Nome.apply(lambda n: n[0:4])
     ur.drop(['Id', 'CreatorUserId', 'TenantId'], axis=1, inplace=True)
@@ -61,3 +62,7 @@ def clean_df_userid(df):
     df = df[df.RoleId.isin([7, 8, 9])]
     df = df.drop('RoleId', axis=1)
     return df
+
+
+if __name__ == "__main__":
+    d = get_users_table()

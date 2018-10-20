@@ -11,9 +11,9 @@ from DA import DatesManager as dm
 # }}}
 
 
-def get_df():
-    df = pd.read_csv('./Dataset/Dumps/out_VrAvatarProducto.csv', sep='|')
-    df = Avatar.merge_avatar(df)
+def get_df(max_date=-1):
+    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarProduct.csv', sep='$')
+    df = Avatar.merge_avatar(df, cut_pce=[6, 7])
     df.drop(['TenantId', 'DeletionTime', 'LastModificationTime', 'SessionId',
              'AvatarId', 'LastModifierUserId', 'CreatorUserId', 'IsDeleted',
              'DeleterUserId', 'ProductSequence', 'ProductPce'],
@@ -21,7 +21,7 @@ def get_df():
     df = df.drop(df.index[df.ProductType == 'RecommendedProduct'])
     df = df.drop(df.index[df.ProductType == 'SoldProduct'])
     df.CreationTime = pd.to_datetime(df.CreationTime, dayfirst=True)
-    df = dm.filter_date(df, 'CreationTime')
+    df = dm.filter_date(df, 'CreationTime', max_date)
     df = dm.add_aggregate_date(df, 'CreationTime')
     df = Users.merge_users_clean(df)
     return df
@@ -30,12 +30,20 @@ def get_df():
 def get_df_group_prod(df=None, include_rare=False):
     if df is None:
         df = get_df()
+
+    p_anag = pd.read_csv('./Dataset/Dumps/ProdAnag.csv', sep='$')
+    p_anag['ProductId'] = p_anag['Codice'] + p_anag['Azienda']
+    p_anag['ProdName'] = (p_anag['Descrizione'] + ' ' + p_anag['Formato'] +
+                          ' ' + p_anag['Confezione'])
+    p_anag = p_anag[['ProductId', 'ProdName', 'Prezzo']]
+    p_anag = p_anag.groupby('ProductId').first().reset_index()
+
     # Names
-    prod = df[['ProductId', 'ProductName', 'ProductFormat']]
-    prod = prod.groupby('ProductId')['ProductName',
-                                     'ProductFormat'].first().reset_index()
-    prod['Name'] = prod['ProductName'] + ' ' + prod['ProductFormat']
-    prod.drop(['ProductName', 'ProductFormat'], axis=1, inplace=True)
+    # prod = df[['ProductId', 'ProductName', 'ProductFormat']]
+    # prod = prod.groupby('ProductId')['ProductName',
+    #                                  'ProductFormat'].first().reset_index()
+    # prod['Name'] = prod['ProductName'] + ' ' + prod['ProductFormat']
+    # prod.drop(['ProductName', 'ProductFormat'], axis=1, inplace=True)
     # prod.set_index('ProductId',true)
 
     n_users = df.groupby('ProductId')['UserId'].nunique().reset_index()
@@ -66,7 +74,7 @@ def get_df_group_prod(df=None, include_rare=False):
     n_reg = df.groupby('ProductId')['Regione'].nunique().reset_index()
     n_reg.rename(columns={'Regione': 'nReg'}, inplace=True)
 
-    prod = pd.merge(prod, n_users)
+    prod = pd.merge(p_anag, n_users)
     prod = pd.merge(prod, n_farma)
     prod = pd.merge(prod, n_tot)
     prod = pd.merge(prod, n_r)

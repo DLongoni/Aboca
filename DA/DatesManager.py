@@ -1,14 +1,20 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 import pandas as pd
 
-min_date = pd.Timestamp(2017, 11, 1)
-max_date = pd.Timestamp(2018, 8, 1)
+MINDATE = pd.Timestamp(2017, 11, 1)
+MAXDATE = pd.Timestamp(2018, 9, 30)
 
 
-def filter_date(df, date_column):
-    df = df[df[date_column] >= min_date]
-    df = df[df[date_column] < max_date]
+def filter_date(df, date_column, max_date=-1):
+    if max_date == -1:
+        max_date = MAXDATE
+    elif not isinstance(max_date, pd.Timestamp):
+        max_date = pd.Timestamp(max_date)
+
+    df = df[df[date_column] >= MINDATE]
+    df = df[df[date_column] <= MAXDATE]
     return df
 
 
