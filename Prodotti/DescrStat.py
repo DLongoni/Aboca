@@ -80,13 +80,13 @@ def rwcount(df, group, count_col='Id'):
     df_r = df[df.ProductType == 'RightProduct']
     df_gr = df.groupby(group)[count_col].count().reset_index()
     df_gr.set_index(group, inplace=True)
-    df_gr.rename(columns={count_col: 'TotCount'}, inplace=True)
+    df_gr.rename(columns={count_col: 'nTot'}, inplace=True)
     df_gr_r = df_r.groupby(group)[count_col].count().reset_index()
     df_gr_r.set_index(group, inplace=True)
     df_gr_r.rename(columns={count_col: 'RightCount'}, inplace=True)
     df_gr = pd.merge(df_gr, df_gr_r, left_index=True, right_index=True,
                      how='outer')
-    df_gr['Ratio'] = df_gr.RightCount/df_gr.TotCount
+    df_gr['Ratio'] = df_gr.RightCount/df_gr.nTot
     return df_gr
 
 
@@ -126,9 +126,9 @@ uh_day = rwcount(user_hist, 'YMD', 'UserId')
 uh_day = uh_day.fillna(0)  # user history
 # }}}
 
-# {{{ Analisi per avatar
+# {{{ Analisi per Avatar
 av = rwcount(data_tot, 'AvSessId')
-av_top = av[av.TotCount >= av.TotCount.quantile(.80)]
+av_top = av[av.nTot >= av.nTot.quantile(.80)]
 avpce = Avatar.get_avatar_pce()
 av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
 # av_top_pce.drop(['SessionId', 'AvatarId'], axis=1, inplace=True)
@@ -138,7 +138,7 @@ def av_freq_hist(df):
     plt.ion()
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
-    dfp = df.sort_values('TotCount')
+    dfp = df.sort_values('nTot')
     ax.barh(range(0, len(dfp)), dfp.Ratio*100)
     for i, (i_pce) in enumerate(dfp.AvatarPce):
         i_hist = ax.get_children()[i]
@@ -155,7 +155,7 @@ def av_freq_hist(df):
 
     ax.legend(handles=l_hand)
     for i, (i_name, i_tot, i_sess) in enumerate(
-            zip(dfp.AvName, dfp.TotCount, dfp.SessionId)):
+            zip(dfp.AvName, dfp.nTot, dfp.SessionId)):
 
         i_lbl = "{0} - {1} - {2}".format(i_tot, i_name, i_sess)
         ax.text(1, i-0.1, i_lbl, color="k", va="center", size=11)
@@ -195,7 +195,14 @@ df_av_w_right = df_av_worst[df_av_worst.ProductType == 'RightProduct']
 df_av_w_wrong = df_av_worst[df_av_worst.ProductType == 'WrongProduct']
 df_av_w_wrong_prod = df_av_w_wrong.groupby('ProductId')['Id'].count()
 # prodotti più frequentemente consigliati sbagliati a questo avatar
-worst_prod_av = df_av_w_wrong_prod.nlargest(3)
+worst_prod_av = df_av_w_wrong_prod.nlargest(10).reset_index()
+worst_prod_av = pd.merge(worst_prod_av, prod_count)[['ProductId', 'Id',
+                                                     'ProdName']]
+worst_prod_av.rename(columns={'Id': 'nTot'}, inplace=True)
+print("*** Prodotti consigliati erroneamente all'avatar [{0}] ***".format(
+    str(av_worst)))
+worst_prod_av[['ProdName', 'nTot']].describe()
+
 # }}}
 
 # {{{ Analisi per PCE
@@ -206,14 +213,12 @@ if 0:  # se volglio fare analisi indietro nel tempo
 pce = rwcount(data_tot, 'AvatarPce')
 
 pce_t = 5
-# analisi per pce, per prodotto
 data_rwt = data_tot[data_tot.AvatarPce == pce_t]
-spce = rwcount(data_rwt, 'ProductId')
 # analisi per pce, per avatar
 apce = rwcount(data_rwt, 'AvSessId')
 # }}}
 
-# {{{ Analisi per utente
+# {{{ Analisi geografica
 prov = rwcount(data_tot, 'Regione')
 
 users_per_reg = data_tot.groupby('Regione')['UserId'].nunique().reset_index()
