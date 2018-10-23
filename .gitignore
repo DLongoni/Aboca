@@ -1,4 +1,6 @@
 .ropeproject/
+.ropeproject
+*ropeproject
 ClusterFig/
 Dataset/
 Others/
