@@ -1,33 +1,29 @@
 #!/usr/bin/env python
 
 import pandas as pd
+from DA import CsvLoader as CsvL
 from IPython import embed # NOQA
 
 
 def get_users_table():
-    # utenti
-    u = pd.read_csv('./Dataset/Dumps/out_qAbpUsers.csv', sep='$')
-    # farmacie
-    f = pd.read_csv('./Dataset/Dumps/out_qVrCustomers.csv', sep='$')
-    # province
-    p = pd.read_csv('./Dataset/Dumps/out_qProvince.csv', sep='$')
-    # regioni
-    r = pd.read_csv('./Dataset/Dumps/out_qRegioni.csv', sep='$')
-    # userroles
-    ur = pd.read_csv('./Dataset/Dumps/out_qAbpUserroles.csv', sep='$')
+    u  = CsvL.get_users_anag()
+    f  = CsvL.get_customers_anag()
+    p  = CsvL.get_province()
+    r  = CsvL.get_regions()
+    ur = CsvL.get_user_roles()
 
     u = u[['Id', 'ClientCode', 'PdcCode']]
-    u.rename(columns={'Id': 'UserId'}, inplace=True)
+    u = u.rename(columns={'Id': 'UserId'})
     u = u[~u.ClientCode.isnull()]
     u['UserId'] = u.UserId.astype(int)
     f = f[['Id', 'Code', 'PdcCode', 'Province']]
-    f.rename(columns={'Id': 'FarmaId'}, inplace=True)
-    f.rename(columns={'Province': 'ProvId'}, inplace=True)
-    p.drop(['Id', 'Nome', 'Longitudine'], axis=1, inplace=True)
+    f = f.rename(columns={'Id': 'FarmaId'})
+    f = f.rename(columns={'Province': 'ProvId'})
+    p = p.drop(['Id', 'Nome', 'Longitudine'], axis=1)
     p = p[['Id_Regione', 'Sigla_automobilistica', 'Latitudine']]
-    p.rename(columns={'Sigla_automobilistica': 'ProvId'}, inplace=True)
+    p = p.rename(columns={'Sigla_automobilistica': 'ProvId'})
     r['Nome'] = r.Nome.apply(lambda n: n[0:4])
-    ur.drop(['Id', 'CreatorUserId', 'TenantId'], axis=1, inplace=True)
+    ur = ur.drop(['Id', 'CreatorUserId', 'TenantId'], axis=1)
 
     # alcuni utenti tipo 208 hanno più di un ruolo
     ur = ur.groupby('UserId')['RoleId'].last().reset_index()

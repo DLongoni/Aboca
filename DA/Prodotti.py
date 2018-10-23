@@ -5,22 +5,18 @@ import numpy as np
 from sklearn.preprocessing import scale
 
 import pandas as pd
+from IPython import embed
 from DA import Users
 from DA import Avatar
 from DA import DatesManager as dm
+from DA import CsvLoader as CsvL
 # }}}
 
 
 def get_df(max_date=-1):
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarProduct.csv', sep='$')
+    df = CsvL.get_prod_history()
     df = Avatar.merge_avatar(df, cut_pce=[6, 7])
-    df.drop(['TenantId', 'DeletionTime', 'LastModificationTime', 'SessionId',
-             'AvatarId', 'LastModifierUserId', 'CreatorUserId', 'IsDeleted',
-             'DeleterUserId', 'ProductSequence', 'ProductPce'],
-            axis=1, inplace=True)
-    df = df.drop(df.index[df.ProductType == 'RecommendedProduct'])
-    df = df.drop(df.index[df.ProductType == 'SoldProduct'])
-    df.CreationTime = pd.to_datetime(df.CreationTime, dayfirst=True)
+    df.drop(['AvatarId', 'SessionId'], axis=1, inplace=True)
     df = dm.filter_date(df, 'CreationTime', max_date)
     df = dm.add_aggregate_date(df, 'CreationTime')
     df = Users.merge_users_clean(df)
@@ -30,13 +26,7 @@ def get_df(max_date=-1):
 def get_df_group_prod(df=None, include_rare=False):
     if df is None:
         df = get_df()
-
-    p_anag = pd.read_csv('./Dataset/Dumps/ProdAnag.csv', sep='$')
-    p_anag['ProductId'] = p_anag['Codice'] + p_anag['Azienda']
-    p_anag['ProdName'] = (p_anag['Descrizione'] + ' ' + p_anag['Formato'] +
-                          ' ' + p_anag['Confezione'])
-    p_anag = p_anag[['ProductId', 'ProdName', 'Prezzo']]
-    p_anag = p_anag.groupby('ProductId').first().reset_index()
+    p_anag = CsvL.get_prod_anag()
 
     # Names
     # prod = df[['ProductId', 'ProductName', 'ProductFormat']]
@@ -112,3 +102,14 @@ def get_df_group_prod_proc(prod=None):
     # pd.plotting.scatter_matrix(prod_proc,diagonal = 'kde')
     # pyplot.show()
     return prod_proc
+
+
+def add_name(df):
+    p_anag = CsvL.get_prod_anag()
+    p_anag = p_anag[['ProductId', 'ProdName']]
+    df = pd.merge(df, p_anag, left_on='ProductId', right_on='ProductId')
+    return df
+
+
+if __name__ == '__main__':
+    embed()

@@ -190,19 +190,14 @@ def av_freq_hist(df):
 # av_bad = av_top[av_top.Ratio<0.15]
 av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].index.values)
 df_av_worst = data_tot[data_tot.AvSessId == av_worst]
-# i pochi che hanno azzeccato questo avatar
-df_av_w_right = df_av_worst[df_av_worst.ProductType == 'RightProduct']
-df_av_w_wrong = df_av_worst[df_av_worst.ProductType == 'WrongProduct']
-df_av_w_wrong_prod = df_av_w_wrong.groupby('ProductId')['Id'].count()
 # prodotti più frequentemente consigliati sbagliati a questo avatar
-worst_prod_av = df_av_w_wrong_prod.nlargest(10).reset_index()
-worst_prod_av = pd.merge(worst_prod_av, prod_count)[['ProductId', 'Id',
-                                                     'ProdName']]
-worst_prod_av.rename(columns={'Id': 'nTot'}, inplace=True)
+df_worst_rw = rwcount(df_av_worst, 'ProductId')
+df_worst_rw = df_worst_rw.nlargest(10, 'nTot').reset_index().fillna(0)
+df_worst_rw = Prodotti.add_name(df_worst_rw)
+
 print("*** Prodotti consigliati erroneamente all'avatar [{0}] ***".format(
     str(av_worst)))
-worst_prod_av[['ProdName', 'nTot']].describe()
-
+print(df_worst_rw)
 # }}}
 
 # {{{ Analisi per PCE
