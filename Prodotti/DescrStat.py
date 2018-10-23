@@ -257,6 +257,7 @@ if 0:
 # }}}
 
 # {{{ Analisi geografica
+# TODO: grafico bar o barh prov con colormap ratio e ntot lunghezza barre
 prov = rwcount(data_tot, 'Regione')
 
 users_per_reg = data_tot.groupby('Regione')['UserId'].nunique().reset_index()
