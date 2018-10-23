@@ -189,11 +189,18 @@ def av_freq_hist(df):
 
 # av_bad = av_top[av_top.Ratio<0.15]
 av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].index.values)
-df_av_worst = data_tot[data_tot.AvSessId == av_worst]
-# prodotti più frequentemente consigliati sbagliati a questo avatar
-df_worst_rw = rwcount(df_av_worst, 'ProductId')
-df_worst_rw = df_worst_rw.nlargest(10, 'nTot').reset_index().fillna(0)
-df_worst_rw = Prodotti.add_name(df_worst_rw)
+
+
+def worst_prod_breakdown(av_worst):
+    df_av_worst = data_tot[data_tot.AvSessId == av_worst]
+    # prodotti più frequentemente consigliati sbagliati a questo avatar
+    df_worst_rw = rwcount(df_av_worst, 'ProductId')
+    df_worst_rw = df_worst_rw.nlargest(10, 'nTot').reset_index().fillna(0)
+    df_worst_rw = Prodotti.add_name(df_worst_rw)
+    return df_worst_rw
+
+
+df_worst_rw = worst_prod_breakdown(av_worst)
 
 print("*** Prodotti consigliati erroneamente all'avatar [{0}] ***".format(
     str(av_worst)))
