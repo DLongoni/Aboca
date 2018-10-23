@@ -15,7 +15,7 @@ from DA import CsvLoader as CsvL
 
 def get_df(max_date=-1):
     df = CsvL.get_prod_history()
-    df = Avatar.merge_avatar(df, cut_pce=[6, 7])
+    df = Avatar.merge_avatar(df, cut_pce=[6, 7, 5])
     df.drop(['AvatarId', 'SessionId'], axis=1, inplace=True)
     df = dm.filter_date(df, 'CreationTime', max_date)
     df = dm.add_aggregate_date(df, 'CreationTime')

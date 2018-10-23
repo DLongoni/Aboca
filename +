@@ -141,10 +141,8 @@ av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
 # av_top_pce.drop(['SessionId', 'AvatarId'], axis=1, inplace=True)
 
 
-def av_freq_hist(df, title="", legend=True):
-    # plt.ion()
-    if title == "":
-        title = 'Gli avatar più giocati hanno ricevuto prodotti corretti?'
+def av_freq_hist(df):
+    plt.ion()
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     dfp = df.sort_values('nTot')
@@ -156,14 +154,13 @@ def av_freq_hist(df, title="", legend=True):
         i_hist.set_edgecolor('k')
         i_hist.set_linewidth(1)
 
-    if legend:
-        l_hand = []
-        for i in range(0, 5):
-            i_patch = mpatches.Patch(color=Constants.colors[i+1],
-                                     label=Avatar.pce_descr(i+1))
-            l_hand.append(i_patch)
+    l_hand = []
+    for i in range(0, 5):
+        i_patch = mpatches.Patch(color=Constants.colors[i+1],
+                                 label=Avatar.pce_descr(i+1))
+        l_hand.append(i_patch)
 
-        ax.legend(handles=l_hand)
+    ax.legend(handles=l_hand)
     for i, (i_name, i_tot, i_sess) in enumerate(
             zip(dfp.AvName, dfp.nTot, dfp.SessionId)):
 
@@ -189,7 +186,8 @@ def av_freq_hist(df, title="", legend=True):
     ax.set_yticks([])
     ax.set_xlim([0, 100])
     ax.set_axisbelow(False)
-    ax.set_title(title, size=20)
+    ax.set_title('Gli avatar più giocati hanno ricevuto prodotti corretti?',
+                 size=20)
     ax.set_xlabel(r'% di consigli corretti', size=18)
     ax.set_ylabel('Numero di prodotti consigliati', size=18)
     f.tight_layout()
@@ -233,27 +231,24 @@ all_pce.sort()
 for i_pce in all_pce:
     data_rwt = data_tot[data_tot.AvatarPce == i_pce]
     apce = rwcount(data_rwt, 'AvSessId')
-    apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
-    apce = pd.merge(apce, avpce)
-
-    i_tit = "Avatar più giocati per il PCE {0}".format(
-        Avatar.pce_descr(i_pce))
-    # print(apce[apce.Ratio == apce.Ratio.min()])
-    av_freq_hist(apce, i_tit, False)
+    print("Worst avatar for PCE [{0}]:".format(i_pce))
+    print(apce[apce.Ratio == apce.Ratio.min()])
+    # plt.bar(range(0, len(apce)), apce.Ratio)
+    # plt.title("PCE {0}".format(i_pce))
+    # plt.show()
 
 # analisi per pce, per prodotto
-if 0:
-    for i_pce in all_pce:
-        data_rwt = data_tot[data_tot.AvatarPce == i_pce]
-        apce = rwcount(data_rwt, 'ProductId')
-        apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
-        apce = Prodotti.add_name(apce)
+for i_pce in all_pce:
+    data_rwt = data_tot[data_tot.AvatarPce == i_pce]
+    apce = rwcount(data_rwt, 'ProductId')
+    apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
+    apce = Prodotti.add_name(apce)
 
-        i_tit = "I prodotti più consigliati per il PCE {0}".format(
-            Avatar.pce_descr(i_pce))
-        # print(apce[apce.Ratio == apce.Ratio.min()])
-        freq_hist(apce, i_tit)
-        # plt.show()
+    i_tit = "I prodotti più consigliati per il PCE {0}".format(
+        Avatar.pce_descr(i_pce))
+    print(apce[apce.Ratio == apce.Ratio.min()])
+    freq_hist(apce, i_tit)
+    # plt.show()
 # }}}
 
 # {{{ Analisi geografica
