@@ -3,6 +3,7 @@
 from functools import lru_cache
 from IPython import embed
 from DA import DatesManager as dm
+import logging
 import pandas as pd
 
 
@@ -62,7 +63,8 @@ def get_avatar_anag():
 def get_users_anag():
     print('*** Loading users anag from csv')
     df = pd.read_csv('./Dataset/Dumps/out_qAbpUsers.csv', sep='$')
-    df['NameSurname'] = df['Name'] + ' ' + df['Surname']
+    df['NameSurname'] = df['Name'].str.title() + ' ' + \
+        df['Surname'].str.title()
     df = df[['Id', 'ClientCode', 'PdcCode', 'NameSurname']]
     df = df.rename(columns={'Id': 'UserId'})
     df = df[~df.ClientCode.isnull()]
@@ -102,9 +104,18 @@ def get_user_roles():
 
 # {{{ REGION: Web log
 @lru_cache(maxsize=100)
-def get_ferrari_log():
-    print('*** Loading Ferrari log')
-    df = pd.read_csv('./Dataset/Dumps/Ferrari.csv')
+def get_web_log(uid):
+    print('*** Loading web log for user [{0}]'.format(uid))
+    if uid == 2668:
+        df = pd.read_csv('./Dataset/Dumps/Ferrari.csv', sep='$')
+    if uid == 3607:
+        df = pd.read_csv('./Dataset/Dumps/Cataldi.csv', sep='$')
+    else:
+        logging.warning("No web log available for user [{0}]"
+                        .format(uid))
+        return None
+
+    df = df[df.Azione.str.contains('analytic', False)]
     df.Tempo = pd.to_datetime(df.Tempo, dayfirst=True).dt.floor('D')
     df = df.Tempo.unique()
     return df

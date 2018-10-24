@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 # {{{ Import
 import seaborn as sns  # NOQA
 import numpy as np
@@ -37,7 +40,7 @@ def freq_hist(df, title=""):
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     dfp = df.sort_values('nTot')
-    ax.barh(dfp.ProductId, dfp.Ratio*100)
+    ax.barh(dfp.ProductId, dfp.Ratio * 100)
     for i, (i_name, i_tot) in enumerate(zip(dfp.ProdName, dfp.nTot)):
 
         i_lbl = "{0} - {1}".format(i_tot, i_name)
@@ -90,7 +93,7 @@ def rwcount(df, group, count_col='Id'):
     df_gr_r.rename(columns={count_col: 'RightCount'}, inplace=True)
     df_gr = pd.merge(df_gr, df_gr_r, left_index=True, right_index=True,
                      how='outer')
-    df_gr['Ratio'] = df_gr.RightCount/df_gr.nTot
+    df_gr['Ratio'] = df_gr.RightCount / df_gr.nTot
     return df_gr
 
 
@@ -119,9 +122,9 @@ dt_single = data[data.ProductId == id_test]
 uhist = data_tot[['UserId', 'AvSessId', 'SessionId', 'YMD']].drop_duplicates()
 uhist_g = uhist.groupby('UserId')[['AvSessId', 'SessionId', 'YMD']].nunique()
 uhist_g = uhist_g.reset_index()
-uhist_g['AvPerDay'] = uhist_g.AvSessId/uhist_g.YMD
-uhist_g['SessPerDay'] = uhist_g.SessionId/uhist_g.YMD
-uhist_g['AvPerSess'] = uhist_g.AvSessId/uhist_g.SessionId
+uhist_g['AvPerDay'] = uhist_g.AvSessId / uhist_g.YMD
+uhist_g['SessPerDay'] = uhist_g.SessionId / uhist_g.YMD
+uhist_g['AvPerSess'] = uhist_g.AvSessId / uhist_g.SessionId
 # uhist_g = uhist_g.sort_values(ascending=False)
 
 
@@ -150,14 +153,29 @@ if 0:
 
 u_most_sess = uhist_g.nlargest(4, 'SessionId').UserId.values
 
-log_ferrari = CsvL.get_ferrari_log()
+log_ferrari = CsvL.get_web_log(2668)
+
+
+def count_occurrences(lb, data):
+    ret = np.zeros(len(lb) - 1)
+    data = data[data >= lb.min()]
+    data = sorted(data[data <= lb.max()])
+    lb.sort()
+    i_data = 0
+    i_bucket = 0
+    for i_lb in lb[1:]:
+        while (i_data < len(data)) and (data[i_data] < i_lb):
+            ret[i_bucket] = ret[i_bucket] + 1
+            i_data = i_data + 1
+        i_bucket = i_bucket + 1
+    return ret
 
 
 def u_sess_start(uid):
-    uh = uhist[uhist.UserId == 2668]
+    uh = uhist[uhist.UserId == uid]
     ustart = uh.groupby('SessionId').min().reset_index().YMD
-    labels = ustart.dt.strftime('%d/%m/%Y')
-    return labels
+    # labels = ustart.dt.strftime('%d/%m/%Y')
+    return ustart
 
 
 def plot_uhist(uid):
@@ -166,26 +184,50 @@ def plot_uhist(uid):
     i_uh_r = i_uh.rolling(10)
     i_sumR = i_uh_r.RightCount.sum()
     i_sumT = i_uh_r.nTot.sum()
-    i_movavg = i_sumR/i_sumT
+    i_movavg = i_sumR / i_sumT
     r_obs = range(0, len(i_movavg))
-    r_obs2 = np.arange(-0.7, len(i_movavg)-0.7, 1)
+    r_obs2 = np.arange(-0.7, len(i_movavg) - 0.7, 1)
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     ax2 = ax.twinx()
-    ax.plot(r_obs, i_movavg, lw=2)
-    ax.bar(r_obs2, i_uh.Ratio, color='orange',
-           alpha=0.5, width=0.7, align='edge')
-    ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.25,
-            align='edge')
-    ax.set_ylabel('Tasso di correttezza')
-    ax2.set_ylabel('Numero prodotti consigliati')
-    ax.set_xlabel('Numero di sessioni')
+    l_hand = []
+    l_lab = []
+    line_avg, = ax.plot(r_obs, i_movavg, lw=3, zorder=10)
+    bar_ratio = ax.bar(r_obs2, i_uh.Ratio, color='orange',
+                       alpha=0.5, width=0.7, align='edge', zorder=1)
+    bar_ntot = ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.25,
+                       align='edge')
+    weblog = CsvL.get_web_log(uid)
+    arr_start = u_sess_start(uid)
+    ax.set_zorder(ax2.get_zorder() + 1)
+    ax.patch.set_visible(False)
+    l_hand.append(line_avg)
+    l_lab.append('Rolling average')
+    l_hand.append(bar_ratio)
+    l_lab.append('Correttezza')
+    l_hand.append(bar_ntot)
+    l_lab.append('Tot prodotti')
+    if weblog is not None:
+        num_web_check = count_occurrences(arr_start.values, weblog)
+        xval = np.add(np.where(num_web_check > 0), 0.25).squeeze(axis=0)
+        yval = np.ones(len(xval)) * 0.5
+        sca_web = ax.scatter(xval, yval, marker='d', edgecolors='k', s=150,
+                             lw=1, facecolor='r', zorder=2)
+        l_hand.append(sca_web)
+        l_lab.append('Sito web')
+
+    ax.legend(tuple(l_hand), tuple(l_lab), fontsize=16)
+    ax.set_ylabel('Tasso di correttezza', size=18)
+    ax2.set_ylabel('Numero prodotti consigliati', size=18)
+    ax.set_xlabel('Numero di sessioni', size=18)
     ax.set_xticks(r_obs)
-    lbl = u_sess_start(uid)
-    ax.set_xticklabels(lbl, rotation=45, ha='right')
+    ax.tick_params(labelsize=16)
+    ax2.tick_params(labelsize=16)
+    lbl = arr_start.dt.strftime('%d/%m/%Y')
+    ax.set_xticklabels(lbl, rotation=45, ha='right', size=15)
 
     plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
-              "per [{0}]".format(Users.get_user_name(uid)))
+              "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
     plt.show()
 
 
@@ -210,7 +252,7 @@ def av_freq_hist(df, title="", legend=True):
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     dfp = df.sort_values('nTot')
-    ax.barh(range(0, len(dfp)), dfp.Ratio*100)
+    ax.barh(range(0, len(dfp)), dfp.Ratio * 100)
     for i, (i_pce) in enumerate(dfp.AvatarPce):
         i_hist = ax.get_children()[i]
         i_hist.set_color(Constants.colors[i_pce])
@@ -221,8 +263,8 @@ def av_freq_hist(df, title="", legend=True):
     if legend:
         l_hand = []
         for i in range(0, 5):
-            i_patch = mpatches.Patch(color=Constants.colors[i+1],
-                                     label=dh.pce_descr(i+1))
+            i_patch = mpatches.Patch(color=Constants.colors[i + 1],
+                                     label=dh.pce_descr(i + 1))
             l_hand.append(i_patch)
 
         ax.legend(handles=l_hand)
@@ -230,7 +272,7 @@ def av_freq_hist(df, title="", legend=True):
             zip(dfp.AvName, dfp.nTot, dfp.SessionId)):
 
         i_lbl = "{0} - {1} - {2}".format(i_tot, i_name, i_sess)
-        ax.text(1, i-0.1, i_lbl, color="k", va="center", size=11)
+        ax.text(1, i - 0.1, i_lbl, color="k", va="center", size=11)
 
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
     ax.tick_params(labelsize=16)
@@ -287,8 +329,7 @@ print(df_worst_rw)
 # }}}
 
 # {{{ Analisi per PCE
-all_pce = data_tot.AvatarPce.unique()
-all_pce.sort()
+all_pce = sorted(data_tot.AvatarPce.unique())
 
 # analisi per pce, per avatar
 if 0:
