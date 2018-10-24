@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 import pandas as pd
 from DA import CsvLoader as CsvL
@@ -12,10 +13,6 @@ def get_users_table():
     r  = CsvL.get_regions()
     ur = CsvL.get_user_roles()
 
-    u = u[['Id', 'ClientCode', 'PdcCode']]
-    u = u.rename(columns={'Id': 'UserId'})
-    u = u[~u.ClientCode.isnull()]
-    u['UserId'] = u.UserId.astype(int)
     f = f[['Id', 'Code', 'PdcCode', 'Province']]
     f = f.rename(columns={'Id': 'FarmaId'})
     f = f.rename(columns={'Province': 'ProvId'})
@@ -37,6 +34,12 @@ def get_users_table():
     ufprr.rename(columns={'Nome': 'Regione'}, inplace=True)
     ufprr.drop(['Code', 'PdcCode'], axis=1, inplace=True)
     return ufprr
+
+
+def get_user_name(user_id):
+    u = CsvL.get_users_anag()
+    ret = u[u.UserId == user_id].NameSurname.values[0]
+    return ret
 
 
 def merge_users_clean(df):
