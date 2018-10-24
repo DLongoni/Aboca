@@ -2,11 +2,11 @@
 
 from functools import lru_cache
 from IPython import embed
+from DA import DatesManager as dm
 import pandas as pd
 
 
-# {{{ REGION: Csv get and cache
-
+# {{{ REGION: Products
 @lru_cache(maxsize=100)
 def get_prod_anag():
     print('*** Loading products data from csv')
@@ -25,15 +25,16 @@ def get_prod_history():
     df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarProduct.csv', sep='$')
     df.drop(['TenantId', 'DeletionTime', 'LastModificationTime',
              'LastModifierUserId', 'CreatorUserId', 'IsDeleted',
-             'DeleterUserId', 'ProductSequence', 'ProductPce'],
+             'DeleterUserId', 'ProductSequence', 'ProductPce', 'CreationTime'],
             axis=1, inplace=True)
     df = df.drop(df.index[df.ProductType == 'RecommendedProduct'])
     df = df.drop(df.index[df.ProductType == 'SoldProduct'])
-    df.CreationTime = pd.to_datetime(df.CreationTime, dayfirst=True)
     hard_fix_prod_hist(df)
     return df
+# }}}
 
 
+# {{{ REGION: Avatar
 @lru_cache(maxsize=100)
 def get_avatar_pce():
     print('*** Loading avatar pce from csv')
@@ -53,8 +54,10 @@ def get_avatar_anag():
     df.drop(['Name', 'Surname'], axis=1, inplace=True)
     df.rename(columns={'Id': 'AvatarId'}, inplace=True)
     return df
+# }}}
 
 
+# {{{ REGION: Users
 @lru_cache(maxsize=100)
 def get_users_anag():
     print('*** Loading users anag from csv')
@@ -94,6 +97,31 @@ def get_user_roles():
     df = pd.read_csv('./Dataset/Dumps/out_qAbpUserroles.csv', sep='$')
     return df
 
+# }}}
+
+
+# {{{ REGION: Web log
+@lru_cache(maxsize=100)
+def get_ferrari_log():
+    print('*** Loading Ferrari log')
+    df = pd.read_csv('./Dataset/Dumps/Ferrari.csv')
+    df.Tempo = pd.to_datetime(df.Tempo, dayfirst=True).dt.floor('D')
+    df = df.Tempo.unique()
+    return df
+# }}}
+
+
+# {{{ REGION: Sessions
+@lru_cache(maxsize=100)
+def get_avatar_history():
+    # Questa tabella ha molte più info ma per ora mi serve sessiondate
+    print('*** Loading sessions history from csv')
+    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarHistory.csv', sep='$')
+    df = df[['UserId', 'SessionId', 'AvatarId', 'StartDate']]
+    df.StartDate = pd.to_datetime(df.StartDate, dayfirst=True)
+    df = dm.add_aggregate_date(df, 'StartDate')
+    df = df.drop('StartDate', axis=1)
+    return df
 # }}}
 
 

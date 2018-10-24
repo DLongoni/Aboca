@@ -7,18 +7,18 @@ from sklearn.preprocessing import scale
 import pandas as pd
 from IPython import embed
 from DA import Users
-from DA import Avatar
 from DA import DatesManager as dm
 from DA import CsvLoader as CsvL
+from DA import DataHelper as dh
 # }}}
 
 
 def get_df(max_date=-1):
     df = CsvL.get_prod_history()
-    df = Avatar.merge_avatar(df, cut_pce=[6, 7, 5])
-    df.drop(['AvatarId', 'SessionId'], axis=1, inplace=True)
-    df = dm.filter_date(df, 'CreationTime', max_date)
-    df = dm.add_aggregate_date(df, 'CreationTime')
+    df = dh.add_avatar_data(df, cut_pce=[6, 7, 5])
+    df = dh.add_session_date(df)
+    df.drop(['AvatarId'], axis=1, inplace=True)
+    df = dm.filter_date(df, 'YMD', max_date)
     df = Users.merge_users_clean(df)
     return df
 
@@ -102,13 +102,6 @@ def get_df_group_prod_proc(prod=None):
     # pd.plotting.scatter_matrix(prod_proc,diagonal = 'kde')
     # pyplot.show()
     return prod_proc
-
-
-def add_name(df):
-    p_anag = CsvL.get_prod_anag()
-    p_anag = p_anag[['ProductId', 'ProdName']]
-    df = pd.merge(df, p_anag, left_on='ProductId', right_on='ProductId')
-    return df
 
 
 if __name__ == '__main__':

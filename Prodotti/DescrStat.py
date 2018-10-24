@@ -6,8 +6,9 @@ from matplotlib import ticker as ticker
 import matplotlib.patches as mpatches
 import pandas as pd
 from DA import Prodotti
-from DA import Avatar
 from DA import Users
+from DA import DataHelper as dh
+from DA import CsvLoader as CsvL
 from Utils import Constants
 from IPython import embed  # NOQA
 # }}}
@@ -25,7 +26,7 @@ data = data_tot.copy(deep=True)
 prod_count = Prodotti.get_df_group_prod(data)
 piu_frequenti = prod_count[prod_count.nTot >=
                            prod_count.quantile(0.75).nTot]
-data.drop(['ProductReplaced', 'CreationTime', 'Id'], axis=1, inplace=True)
+data.drop(['ProductReplaced', 'Id'], axis=1, inplace=True)
 
 
 def freq_hist(df, title=""):
@@ -115,10 +116,12 @@ dt_single = data[data.ProductId == id_test]
 # recomm_user = dt_single.UserId.value_counts()
 # user_max = recomm_user[recomm_user == recomm_user.max()].index[0]
 
-uhist = data_tot[['UserId', 'AvSessId', 'YMD']].drop_duplicates()
-uhist_g = uhist.groupby('UserId')[['AvSessId', 'YMD']].nunique()
+uhist = data_tot[['UserId', 'AvSessId', 'SessionId', 'YMD']].drop_duplicates()
+uhist_g = uhist.groupby('UserId')[['AvSessId', 'SessionId', 'YMD']].nunique()
 uhist_g = uhist_g.reset_index()
 uhist_g['AvPerDay'] = uhist_g.AvSessId/uhist_g.YMD
+uhist_g['SessPerDay'] = uhist_g.SessionId/uhist_g.YMD
+uhist_g['AvPerSess'] = uhist_g.AvSessId/uhist_g.SessionId
 # uhist_g = uhist_g.sort_values(ascending=False)
 
 
@@ -129,7 +132,7 @@ def df_user_history(user_id, group='AvSessId'):
     return uh_day
 
 
-user_max = uhist_g.index[uhist_g.YMD == uhist_g.YMD.max()][0]
+user_max = uhist_g[uhist_g.YMD == uhist_g.YMD.max()].UserId.values[0]
 user_hist = df_user_history(user_max)
 
 if 0:  # se voglio fare analisi per prodotto
@@ -145,38 +148,58 @@ if 0:
     plt.colorbar()
     plt.show()
 
-u_most_sess = uhist_g[uhist_g.AvSessId > uhist_g.quantile(.99).AvSessId].UserId
-if 1:
-    for i_u in u_most_sess:
-        i_uh = df_user_history(i_u)
-        i_uh_r = i_uh.rolling(15)
-        i_sumR = i_uh_r.RightCount.sum()
-        i_sumT = i_uh_r.nTot.sum()
-        i_movavg = i_sumR/i_sumT
-        r_obs = range(0, len(i_movavg))
-        r_obs2 = np.arange(-0.45, len(i_movavg)-0.45, 1)
-        f = plt.figure(figsize=(9, 8))
-        ax = f.add_subplot(111)
-        ax2 = ax.twinx()
-        ax.plot(r_obs, i_movavg)
-        ax.bar(r_obs2, i_uh.Ratio, color='orange',
-               alpha=0.5, width=0.45, align='edge')
-        ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.45,
-                align='edge')
-        ax.set_ylabel('Tasso di correttezza')
-        ax2.set_ylabel('Numero prodotti consigliati')
-        ax.set_xlabel('Numero di sessioni')
+u_most_sess = uhist_g.nlargest(4, 'SessionId').UserId.values
 
-        plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
-                  "per [{0}]".format(Users.get_user_name(i_u)))
-        plt.show()
+log_ferrari = CsvL.get_ferrari_log()
+
+
+def u_sess_start(uid):
+    uh = uhist[uhist.UserId == 2668]
+    ustart = uh.groupby('SessionId').min().reset_index().YMD
+    labels = ustart.dt.strftime('%d/%m/%Y')
+    return labels
+
+
+def plot_uhist(uid):
+    plt.ion()
+    i_uh = df_user_history(uid, 'SessionId')
+    i_uh_r = i_uh.rolling(10)
+    i_sumR = i_uh_r.RightCount.sum()
+    i_sumT = i_uh_r.nTot.sum()
+    i_movavg = i_sumR/i_sumT
+    r_obs = range(0, len(i_movavg))
+    r_obs2 = np.arange(-0.7, len(i_movavg)-0.7, 1)
+    f = plt.figure(figsize=(9, 8))
+    ax = f.add_subplot(111)
+    ax2 = ax.twinx()
+    ax.plot(r_obs, i_movavg, lw=2)
+    ax.bar(r_obs2, i_uh.Ratio, color='orange',
+           alpha=0.5, width=0.7, align='edge')
+    ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.25,
+            align='edge')
+    ax.set_ylabel('Tasso di correttezza')
+    ax2.set_ylabel('Numero prodotti consigliati')
+    ax.set_xlabel('Numero di sessioni')
+    ax.set_xticks(r_obs)
+    lbl = u_sess_start(uid)
+    ax.set_xticklabels(lbl, rotation=45, ha='right')
+
+    plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
+              "per [{0}]".format(Users.get_user_name(uid)))
+    plt.show()
+
+
+if 0:
+    for i_u in u_most_sess:
+        plot_uhist(i_u)
 # }}}
 
 # {{{ Analisi per Avatar
 av = rwcount(data_tot, 'AvSessId')
-av_top = av[av.nTot >= av.nTot.quantile(.80)]
-avpce = Avatar.get_avatar_pce()
-av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
+av_top = av[av.nTot >= av.nTot.quantile(.80)].reset_index()
+# avpce = Avatar.get_avatar_pce()
+# av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
+av_top_pce = dh.add_avatar_data(av_top)
 # av_top_pce.drop(['SessionId', 'AvatarId'], axis=1, inplace=True)
 
 
@@ -199,7 +222,7 @@ def av_freq_hist(df, title="", legend=True):
         l_hand = []
         for i in range(0, 5):
             i_patch = mpatches.Patch(color=Constants.colors[i+1],
-                                     label=Avatar.pce_descr(i+1))
+                                     label=dh.pce_descr(i+1))
             l_hand.append(i_patch)
 
         ax.legend(handles=l_hand)
@@ -236,7 +259,7 @@ def av_freq_hist(df, title="", legend=True):
 
 
 # av_bad = av_top[av_top.Ratio<0.15]
-av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].index.values)
+av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].AvSessId)
 
 
 def worst_prod_breakdown(av_worst):
@@ -244,7 +267,7 @@ def worst_prod_breakdown(av_worst):
     # prodotti più frequentemente consigliati sbagliati a questo avatar
     df_worst_rw = rwcount(df_av_worst, 'ProductId')
     df_worst_rw = df_worst_rw.nlargest(10, 'nTot').reset_index().fillna(0)
-    df_worst_rw = Prodotti.add_name(df_worst_rw)
+    df_worst_rw = dh.add_prod_name(df_worst_rw)
     return df_worst_rw
 
 
@@ -273,10 +296,11 @@ if 0:
         data_rwt = data_tot[data_tot.AvatarPce == i_pce]
         apce = rwcount(data_rwt, 'AvSessId')
         apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
-        apce = pd.merge(apce, avpce)
+        apce = dh.add_avatar_data(apce)
+        # apce = pd.merge(apce, avpce)
 
         i_tit = "Avatar più giocati per il PCE {0}".format(
-            Avatar.pce_descr(i_pce))
+            dh.pce_descr(i_pce))
         # print(apce[apce.Ratio == apce.Ratio.min()])
         av_freq_hist(apce, i_tit, False)
 
@@ -289,7 +313,7 @@ if 0:
         apce = Prodotti.add_name(apce)
 
         i_tit = "I prodotti più consigliati per il PCE {0}".format(
-            Avatar.pce_descr(i_pce))
+            dh.pce_descr(i_pce))
         # print(apce[apce.Ratio == apce.Ratio.min()])
         freq_hist(apce, i_tit)
         # plt.show()
