@@ -59,6 +59,11 @@ def get_avatar_anag():
 def get_users_anag():
     print('*** Loading users anag from csv')
     df = pd.read_csv('./Dataset/Dumps/out_qAbpUsers.csv', sep='$')
+    df['NameSurname'] = df['Name'] + ' ' + df['Surname']
+    df = df[['Id', 'ClientCode', 'PdcCode', 'NameSurname']]
+    df = df.rename(columns={'Id': 'UserId'})
+    df = df[~df.ClientCode.isnull()]
+    df['UserId'] = df.UserId.astype(int)
     return df
 
 

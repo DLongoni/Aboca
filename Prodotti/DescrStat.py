@@ -1,11 +1,13 @@
 # {{{ Import
 import seaborn as sns  # NOQA
+import numpy as np
 from matplotlib import pyplot as plt  # NOQA
 from matplotlib import ticker as ticker
 import matplotlib.patches as mpatches
 import pandas as pd
 from DA import Prodotti
 from DA import Avatar
+from DA import Users
 from Utils import Constants
 from IPython import embed  # NOQA
 # }}}
@@ -14,7 +16,7 @@ from IPython import embed  # NOQA
 sns.set()
 sns.set_style('ticks')
 
-# {{{ Caricamneto dati
+# {{{ Caricamento dati
 data_tot = Prodotti.get_df()
 data = data_tot.copy(deep=True)
 # }}}
@@ -110,27 +112,64 @@ dt_single = data[data.ProductId == id_test]
 # Creation time è identico per "sessione"
 # La cosa interessante qua è che vedi quali farmacisti consigliano un botto
 # questo farmaco
-recomm_user = dt_single.UserId.value_counts()
-user_max = recomm_user[recomm_user == recomm_user.max()].index[0]
+# recomm_user = dt_single.UserId.value_counts()
+# user_max = recomm_user[recomm_user == recomm_user.max()].index[0]
 
-dt_userday = data_tot[['UserId', 'YMD']].drop_duplicates()
-days_recomm = dt_userday.groupby('UserId')['YMD'].nunique()
-days_recomm = days_recomm.sort_values(ascending=False)
+uhist = data_tot[['UserId', 'AvSessId', 'YMD']].drop_duplicates()
+uhist_g = uhist.groupby('UserId')[['AvSessId', 'YMD']].nunique()
+uhist_g = uhist_g.reset_index()
+uhist_g['AvPerDay'] = uhist_g.AvSessId/uhist_g.YMD
+# uhist_g = uhist_g.sort_values(ascending=False)
 
 
-def df_user_history(user_id):
+def df_user_history(user_id, group='AvSessId'):
     user_hist = data_tot[data_tot.UserId == user_id]
-    uh_day = rwcount(user_hist, 'YMD', 'UserId')
+    uh_day = rwcount(user_hist, group, 'UserId')
     uh_day = uh_day.fillna(0)  # user history
     return uh_day
 
 
-user_max = days_recomm.index[1]
+user_max = uhist_g.index[uhist_g.YMD == uhist_g.YMD.max()][0]
 user_hist = df_user_history(user_max)
 
 if 0:  # se voglio fare analisi per prodotto
     p_freq = 'P0096AB'  # prodotto consigliato frequentemente da questo
     user_hist = user_hist[user_hist.ProductId == p_freq]
+
+user_ratio = rwcount(data_tot, 'UserId').reset_index()
+u_rw_hist = pd.merge(user_ratio, uhist_g)
+# Grafico con user ratio, num giocate tot, ratio giocate/giorno
+if 0:
+    plt.scatter(u_rw_hist.nTot, u_rw_hist.Ratio, c=u_rw_hist.AvPerDay,
+                cmap='viridis')
+    plt.colorbar()
+    plt.show()
+
+u_most_sess = uhist_g[uhist_g.AvSessId > uhist_g.quantile(.99).AvSessId].UserId
+if 1:
+    for i_u in u_most_sess:
+        i_uh = df_user_history(i_u)
+        i_uh_r = i_uh.rolling(15)
+        i_sumR = i_uh_r.RightCount.sum()
+        i_sumT = i_uh_r.nTot.sum()
+        i_movavg = i_sumR/i_sumT
+        r_obs = range(0, len(i_movavg))
+        r_obs2 = np.arange(-0.45, len(i_movavg)-0.45, 1)
+        f = plt.figure(figsize=(9, 8))
+        ax = f.add_subplot(111)
+        ax2 = ax.twinx()
+        ax.plot(r_obs, i_movavg)
+        ax.bar(r_obs2, i_uh.Ratio, color='orange',
+               alpha=0.5, width=0.45, align='edge')
+        ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.45,
+                align='edge')
+        ax.set_ylabel('Tasso di correttezza')
+        ax2.set_ylabel('Numero prodotti consigliati')
+        ax.set_xlabel('Numero di sessioni')
+
+        plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
+                  "per [{0}]".format(Users.get_user_name(i_u)))
+        plt.show()
 # }}}
 
 # {{{ Analisi per Avatar
@@ -225,21 +264,21 @@ print(df_worst_rw)
 # }}}
 
 # {{{ Analisi per PCE
-pce = rwcount(data_tot, 'AvatarPce')
-
-# analisi per pce, per avatar
 all_pce = data_tot.AvatarPce.unique()
 all_pce.sort()
-for i_pce in all_pce:
-    data_rwt = data_tot[data_tot.AvatarPce == i_pce]
-    apce = rwcount(data_rwt, 'AvSessId')
-    apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
-    apce = pd.merge(apce, avpce)
 
-    i_tit = "Avatar più giocati per il PCE {0}".format(
-        Avatar.pce_descr(i_pce))
-    # print(apce[apce.Ratio == apce.Ratio.min()])
-    av_freq_hist(apce, i_tit, False)
+# analisi per pce, per avatar
+if 0:
+    for i_pce in all_pce:
+        data_rwt = data_tot[data_tot.AvatarPce == i_pce]
+        apce = rwcount(data_rwt, 'AvSessId')
+        apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
+        apce = pd.merge(apce, avpce)
+
+        i_tit = "Avatar più giocati per il PCE {0}".format(
+            Avatar.pce_descr(i_pce))
+        # print(apce[apce.Ratio == apce.Ratio.min()])
+        av_freq_hist(apce, i_tit, False)
 
 # analisi per pce, per prodotto
 if 0:
