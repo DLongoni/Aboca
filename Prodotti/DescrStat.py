@@ -408,4 +408,10 @@ prov = pd.merge(prov, users_per_reg, left_index=True, right_index=True)
 rol = rwcount(data_tot, 'RoleId')
 # }}}
 
+# {{{ REGION: Analisi num giocate utenti
+ymdcount = uhist_g.YMD.value_counts()
+avcount = uhist_g.AvSessId.value_counts()
+# Il grafico della morte
+# plt.scatter(ymdcount.index, ymdcount.values)
+# }}}
 embed()
