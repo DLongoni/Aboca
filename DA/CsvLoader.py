@@ -142,7 +142,6 @@ def hard_fix_prod_hist(df):
     df.loc[(df.ProductId == 'P0026AB') & (df.AvatarId == 18) &
            (df.SessionId == 4) & (df.ProductType == 'WrongProduct'),
            'ProductType'] = 'RightProduct'
-
 # }}}
 
 

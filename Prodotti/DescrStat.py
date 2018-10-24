@@ -219,7 +219,7 @@ def plot_uhist(uid):
     ax.legend(tuple(l_hand), tuple(l_lab), fontsize=16)
     ax.set_ylabel('Tasso di correttezza', size=18)
     ax2.set_ylabel('Numero prodotti consigliati', size=18)
-    ax.set_xlabel('Numero di sessioni', size=18)
+    ax.set_xlabel('Sessioni', size=18)
     ax.set_xticks(r_obs)
     ax.tick_params(labelsize=16)
     ax2.tick_params(labelsize=16)
@@ -228,6 +228,43 @@ def plot_uhist(uid):
 
     plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
               "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
+    plt.show()
+
+
+def prod_plot(uid):
+    plt.ion()
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
+    du = data_tot[data_tot.UserId == uid]
+    duprod = rwcount(du, 'ProductId').reset_index()
+    most_uprod = duprod.nlargest(4, 'nTot').ProductId.values
+    for i, (ip, ia) in enumerate(zip(most_uprod, [ax1, ax2, ax3, ax4])):
+        idup = du[du.ProductId == ip]
+        idup_rw = idup.groupby('SessionId').apply(lambda x: pd.Series(
+            {'Ratio': sum(x.ProductType == 'RightProduct') / x.Id.count(),
+             'nTot': x.Id.count()})).reset_index()
+        ic = Constants.colors[i]
+        r_obs2 = range(0, len(idup_rw))
+        r_obs = np.arange(-0.7, len(idup_rw) - 0.7, 1)
+        ia.bar(r_obs, idup_rw.Ratio, color=ic, width=0.7, align='edge')
+        ia2 = ia.twinx()
+        ia2.bar(r_obs2, idup_rw.nTot, color='orange', width=0.25, align='edge')
+        ia2.set_yticks(range(0, int(idup_rw.nTot.max() + 1)))
+        ipname = Prodotti.get_product_name(ip)
+        ia.set_title('Progresso per {0}'.format(ipname), size=16)
+        ia.set_xticks([])
+        ia.tick_params(labelsize=16)
+
+    a = f.axes
+    a[0].set_ylabel('Tasso di correttezza', size=18)
+    a[2].set_ylabel('Tasso di correttezza', size=18)
+    a[5].set_ylabel('Numero prodotti consigliati', size=18,
+                    color='orange')
+    a[7].set_ylabel('Numero prodotti consigliati', size=18,
+                    color='orange')
+    a[2].set_xlabel('Sessioni', size=18)
+    a[3].set_xlabel('Sessioni', size=18)
+
+    f.suptitle('Utente {0}'.format(Users.get_user_name(uid)), size=18)
     plt.show()
 
 

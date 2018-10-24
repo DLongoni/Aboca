@@ -104,5 +104,11 @@ def get_df_group_prod_proc(prod=None):
     return prod_proc
 
 
+def get_product_name(product_id):
+    p = CsvL.get_prod_anag()
+    ret = p[p.ProductId == product_id].ProdName.values[0]
+    return ret
+
+
 if __name__ == '__main__':
     embed()
