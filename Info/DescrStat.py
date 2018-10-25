@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt  # NOQA
 from matplotlib import ticker as ticker
 import matplotlib.patches as mpatches
 import pandas as pd
+from DA import Info
 from DA import Prodotti
 from DA import Users
 from DA import DataHelper as dh
@@ -20,15 +21,26 @@ sns.set()
 sns.set_style('ticks')
 
 # {{{ Caricamento dati
-data_tot = Prodotti.get_df()
+data_tot = Info.get_df()
 data = data_tot.copy(deep=True)
 # }}}
 
 # {{{ Grafico prodotti piu frequenti
-prod_count = Prodotti.get_df_group_prod(data)
-piu_frequenti = prod_count[prod_count.nTot >=
-                           prod_count.quantile(0.75).nTot]
-data.drop(['ProductReplaced', 'Id'], axis=1, inplace=True)
+# prod_count = Prodotti.get_df_group_prod(data)
+# piu_frequenti = prod_count[prod_count.nTot >=
+#                            prod_count.quantile(0.75).nTot]
+# data.drop(['ProductReplaced', 'Id'], axis=1, inplace=True)
+# }}}
+
+
+def rwcount(df, group, type_suffix='Info', count_col='Id'):
+    rstring = 'Right{0}'.format(type_suffix)
+    wstring = 'Wrong{0}'.format(type_suffix)
+    df_f = df[(df.InfoType == rstring) | (df.InfoType == wstring)]
+    df_rw = df_f.groupby(group).apply(lambda x: pd.Series(
+        {'Ratio': sum(x.InfoType == rstring) / x[count_col].count(),
+            'nTot': x[count_col].count()})).reset_index()
+    return df_rw
 
 
 def freq_hist(df, title=""):
@@ -68,32 +80,7 @@ def freq_hist(df, title=""):
     plt.show()
 
 
-if 0:
-    freq_hist(piu_frequenti)
-# }}}
-
-# {{{ Prodotti più rari
-if 1:
-    df_rari = Prodotti.get_df_group_prod(include_rare=True).sort_values('nTot')
-    p_rari = df_rari[df_rari.nTot <= df_rari.nTot.quantile(.1)]
-    print('*** Prodotti consigliati rarmente ***')
-    print(p_rari[['ProdName', 'nTot']])
-    csv_rari = p_rari[['ProdName', 'nTot']].to_csv()
-# }}}
-
-
-def rwcount(df, group, count_col='Id'):
-    df_r = df[df.ProductType == 'RightProduct']
-    df_gr = df.groupby(group)[count_col].count().reset_index()
-    df_gr.set_index(group, inplace=True)
-    df_gr.rename(columns={count_col: 'nTot'}, inplace=True)
-    df_gr_r = df_r.groupby(group)[count_col].count().reset_index()
-    df_gr_r.set_index(group, inplace=True)
-    df_gr_r.rename(columns={count_col: 'RightCount'}, inplace=True)
-    df_gr = pd.merge(df_gr, df_gr_r, left_index=True, right_index=True,
-                     how='outer')
-    df_gr['Ratio'] = df_gr.RightCount / df_gr.nTot
-    return df_gr
+embed()
 
 
 # {{{ Analisi temporale per prodotto e utente
@@ -228,49 +215,8 @@ def plot_uhist(uid):
     plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
               "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
     plt.show()
-
-
-def prod_plot(uid):
-    plt.ion()
-    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
-    du = data_tot[data_tot.UserId == uid]
-    duprod = rwcount(du, 'ProductId').reset_index()
-    most_uprod = duprod.nlargest(4, 'nTot').ProductId.values
-    for i, (ip, ia) in enumerate(zip(most_uprod, [ax1, ax2, ax3, ax4])):
-        idup = du[du.ProductId == ip]
-        idup_rw = idup.groupby('SessionId').apply(lambda x: pd.Series(
-            {'Ratio': sum(x.ProductType == 'RightProduct') / x.Id.count(),
-             'nTot': x.Id.count()})).reset_index()
-        ic = Constants.colors[i]
-        r_obs2 = range(0, len(idup_rw))
-        r_obs = np.arange(-0.7, len(idup_rw) - 0.7, 1)
-        ia.bar(r_obs, idup_rw.Ratio, color=ic, width=0.7, align='edge')
-        ia2 = ia.twinx()
-        ia2.bar(r_obs2, idup_rw.nTot, color='orange', width=0.25, align='edge')
-        ia2.set_yticks(range(0, int(idup_rw.nTot.max() + 1)))
-        ipname = Prodotti.get_product_name(ip)
-        ia.set_title('Progresso per {0}'.format(ipname), size=16)
-        ia.set_xticks([])
-        ia.tick_params(labelsize=16)
-
-    a = f.axes
-    a[0].set_ylabel('Tasso di correttezza', size=18)
-    a[2].set_ylabel('Tasso di correttezza', size=18)
-    a[5].set_ylabel('Numero prodotti consigliati', size=18,
-                    color='orange')
-    a[7].set_ylabel('Numero prodotti consigliati', size=18,
-                    color='orange')
-    a[2].set_xlabel('Sessioni', size=18)
-    a[3].set_xlabel('Sessioni', size=18)
-
-    f.suptitle('Utente {0}'.format(Users.get_user_name(uid)), size=18)
-    plt.show()
-
-
-if 0:
-    for i_u in u_most_sess:
-        plot_uhist(i_u)
 # }}}
+
 
 # {{{ Analisi per Avatar
 av = rwcount(data_tot, 'AvSessId')

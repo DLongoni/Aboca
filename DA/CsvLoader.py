@@ -35,7 +35,35 @@ def get_prod_history():
 # }}}
 
 
+# {{{ REGION: Info
+@lru_cache(maxsize=100)
+def get_avatar_info():
+    print('*** Loading avatar info from csv')
+    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarInfo.csv', sep='$')
+    # 25-10-18 ad oggi escludo sequence, e infoid che non so come interpretare
+    df = df[['Id', 'UserId', 'SessionId', 'AvatarId', 'InfoType',
+             'InfoText', 'ProductId']]
+    df = df[(df.InfoType.str.contains('wrong', False)) |
+            (df.InfoType.str.contains('right', False))]
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dRightInfo\b'), 'InfoType'] = 'RightInfo'
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dWrongInfo\b'), 'InfoType'] = 'WrongInfo'
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dRightAdvantages\b'), 'InfoType'] = 'RightAdvantages'
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dWrongAdvantages\b'), 'InfoType'] = 'WrongAdvantages'
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dRightBenefit\b'), 'InfoType'] = 'RightBenefit'
+    df.loc[df.InfoType.str.contains(
+        r'\bProduct\dWrongBenefit\b'), 'InfoType'] = 'WrongBenefit'
+    return df
+# }}}
+
+
 # {{{ REGION: Avatar
+
+
 @lru_cache(maxsize=100)
 def get_avatar_pce():
     print('*** Loading avatar pce from csv')
