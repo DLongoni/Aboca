@@ -21,8 +21,7 @@ sns.set()
 sns.set_style('ticks')
 
 # {{{ Caricamento dati
-data_tot = Info.get_df()
-data = data_tot.copy(deep=True)
+df = Info.get_df()
 # }}}
 
 # {{{ Grafico prodotti piu frequenti
@@ -80,13 +79,16 @@ def freq_hist(df, title=""):
     plt.show()
 
 
+rw_info = rwcount(df, 'ProductId', 'Info')
+rw_info_freq = dh.add_prod_name(rw_info.nlargest(20, 'nTot'))
+freq_hist(rw_info_freq)
 embed()
 
 
 # {{{ Analisi temporale per prodotto e utente
 id_test = 'P0011AN'  # Il piu frequente Flora Intestinale Bustine
 gr_col = 'YearMonth'
-dt_single = data[data.ProductId == id_test]
+dt_single = df[df.ProductId == id_test]
 # for id_test in piu_frequenti.ProductId:
 # for id_test in [id_test]:
 #     dt_single = data[data.ProductId == id_test]
@@ -105,7 +107,7 @@ dt_single = data[data.ProductId == id_test]
 # recomm_user = dt_single.UserId.value_counts()
 # user_max = recomm_user[recomm_user == recomm_user.max()].index[0]
 
-uhist = data_tot[['UserId', 'AvSessId', 'SessionId', 'YMD']].drop_duplicates()
+uhist = df[['UserId', 'AvSessId', 'SessionId', 'YMD']].drop_duplicates()
 uhist_g = uhist.groupby('UserId')[['AvSessId', 'SessionId', 'YMD']].nunique()
 uhist_g = uhist_g.reset_index()
 uhist_g['AvPerDay'] = uhist_g.AvSessId / uhist_g.YMD
@@ -115,7 +117,7 @@ uhist_g['AvPerSess'] = uhist_g.AvSessId / uhist_g.SessionId
 
 
 def df_user_history(user_id, group='AvSessId'):
-    user_hist = data_tot[data_tot.UserId == user_id]
+    user_hist = df[df.UserId == user_id]
     uh_day = rwcount(user_hist, group, 'UserId')
     uh_day = uh_day.fillna(0)  # user history
     return uh_day
@@ -128,7 +130,7 @@ if 0:  # se voglio fare analisi per prodotto
     p_freq = 'P0096AB'  # prodotto consigliato frequentemente da questo
     user_hist = user_hist[user_hist.ProductId == p_freq]
 
-user_ratio = rwcount(data_tot, 'UserId').reset_index()
+user_ratio = rwcount(df, 'UserId').reset_index()
 u_rw_hist = pd.merge(user_ratio, uhist_g)
 # Grafico con user ratio, num giocate tot, ratio giocate/giorno
 if 0:
@@ -219,7 +221,7 @@ def plot_uhist(uid):
 
 
 # {{{ Analisi per Avatar
-av = rwcount(data_tot, 'AvSessId')
+av = rwcount(df, 'AvSessId')
 av_top = av[av.nTot >= av.nTot.quantile(.80)].reset_index()
 # avpce = Avatar.get_avatar_pce()
 # av_top_pce = pd.merge(av_top, avpce, left_index=True, right_on='AvSessId')
@@ -287,7 +289,7 @@ av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].AvSessId)
 
 
 def worst_prod_breakdown(av_worst):
-    df_av_worst = data_tot[data_tot.AvSessId == av_worst]
+    df_av_worst = df[df.AvSessId == av_worst]
     # prodotti più frequentemente consigliati sbagliati a questo avatar
     df_worst_rw = rwcount(df_av_worst, 'ProductId')
     df_worst_rw = df_worst_rw.nlargest(10, 'nTot').reset_index().fillna(0)
@@ -311,12 +313,12 @@ print(df_worst_rw)
 # }}}
 
 # {{{ Analisi per PCE
-all_pce = sorted(data_tot.AvatarPce.unique())
+all_pce = sorted(df.AvatarPce.unique())
 
 # analisi per pce, per avatar
 if 0:
     for i_pce in all_pce:
-        data_rwt = data_tot[data_tot.AvatarPce == i_pce]
+        data_rwt = df[df.AvatarPce == i_pce]
         apce = rwcount(data_rwt, 'AvSessId')
         apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
         apce = dh.add_avatar_data(apce)
@@ -330,7 +332,7 @@ if 0:
 # analisi per pce, per prodotto
 if 0:
     for i_pce in all_pce:
-        data_rwt = data_tot[data_tot.AvatarPce == i_pce]
+        data_rwt = df[df.AvatarPce == i_pce]
         apce = rwcount(data_rwt, 'ProductId')
         apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
         apce = Prodotti.add_name(apce)
@@ -344,13 +346,13 @@ if 0:
 
 # {{{ Analisi geografica
 # TODO: grafico bar o barh prov con colormap ratio e ntot lunghezza barre
-prov = rwcount(data_tot, 'Regione')
+prov = rwcount(df, 'Regione')
 
-users_per_reg = data_tot.groupby('Regione')['UserId'].nunique().reset_index()
+users_per_reg = df.groupby('Regione')['UserId'].nunique().reset_index()
 users_per_reg.set_index('Regione', inplace=True)
 
 prov = pd.merge(prov, users_per_reg, left_index=True, right_index=True)
-rol = rwcount(data_tot, 'RoleId')
+rol = rwcount(df, 'RoleId')
 # }}}
 
 # {{{ Analisi num giocate utenti
@@ -366,16 +368,16 @@ avcount = uhist_g.AvSessId.value_counts()
 # comunque non cambia quasi niente
 if 0:
     for soglia_s in [11, 19]:
-        dsess_max = data_tot.groupby('UserId')['SessionId'].max().reset_index()
-        urw = rwcount(data_tot, 'UserId')
+        dsess_max = df.groupby('UserId')['SessionId'].max().reset_index()
+        urw = rwcount(df, 'UserId')
         sessratio = pd.merge(dsess_max, urw, on='UserId')
         utanti = sessratio[sessratio.SessionId >= soglia_s].UserId.values
         upochi = sessratio[sessratio.SessionId < soglia_s].UserId.values
-        dtanti = data_tot[data_tot.UserId.isin(utanti)]
-        dpochi = data_tot[data_tot.UserId.isin(upochi)]
+        dtanti = df[df.UserId.isin(utanti)]
+        dpochi = df[df.UserId.isin(upochi)]
         rwta = rwcount(dtanti, 'SessionId').reset_index()
         rwpo = rwcount(dpochi, 'SessionId').reset_index()
-        rwtutti = rwcount(data_tot, 'SessionId').reset_index()
+        rwtutti = rwcount(df, 'SessionId').reset_index()
         l1 = plt.scatter(rwta.SessionId, rwta.Ratio)
         l2 = plt.scatter(rwpo.SessionId, rwpo.Ratio)
         l3 = plt.scatter(rwtutti.SessionId, rwtutti.Ratio, marker='x')
