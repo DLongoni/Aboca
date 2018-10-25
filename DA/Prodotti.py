@@ -15,12 +15,26 @@ from DA import DataHelper as dh
 
 def get_df(max_date=-1):
     df = CsvL.get_prod_history()
-    df = dh.add_avatar_data(df, cut_pce=[6, 7, 5])
+    df = dh.add_avatar_data(df, cut_pce=[5, 6, 7])
+    __hist_hardfix(df)
     df = dh.add_session_date(df)
     df.drop(['AvatarId'], axis=1, inplace=True)
     df = dm.filter_date(df, 'YMD', max_date)
     df = Users.merge_users_clean(df)
     return df
+
+
+def __hist_hardfix(df):
+    df.loc[(df.ProductName.str.contains('Colilen')) & (df.AvatarPce == 5),
+           'ProductType'] = 'RightProduct'
+    avprod_rw = df.groupby(['AvSessId', 'ProductId']).apply(
+        lambda x: pd.Series(
+            {'Ratio': sum(x.ProductType == 'RightProduct') / x.Id.count(),
+             'nTot': x.Id.count()})).reset_index()
+    avp_wrong = avprod_rw[~avprod_rw.Ratio.isin([0, 1])]
+    for ia, ip in avp_wrong[['AvSessId', 'ProductId']].itertuples(index=False):
+        df.loc[(df.AvSessId == ia) & (df.ProductId == ip),
+               'ProductType'] = 'RightProduct'
 
 
 def get_df_group_prod(df=None, include_rare=False):

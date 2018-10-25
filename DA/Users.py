@@ -33,6 +33,7 @@ def get_users_table():
     ufprr.drop(['Id_Regione'], axis=1, inplace=True)
     ufprr.rename(columns={'Nome': 'Regione'}, inplace=True)
     ufprr.drop(['Code', 'PdcCode'], axis=1, inplace=True)
+    ufprr = ufprr[ufprr.UserId != 12]  # Andrea Dini
     return ufprr
 
 

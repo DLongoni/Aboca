@@ -107,8 +107,9 @@ def get_user_roles():
 def get_web_log(uid):
     print('*** Loading web log for user [{0}]'.format(uid))
     if uid == 2668:
+        print('a')
         df = pd.read_csv('./Dataset/Dumps/Ferrari.csv', sep='$')
-    if uid == 3607:
+    elif uid == 3607:
         df = pd.read_csv('./Dataset/Dumps/Cataldi.csv', sep='$')
     else:
         logging.warning("No web log available for user [{0}]"

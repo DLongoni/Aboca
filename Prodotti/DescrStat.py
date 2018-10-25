@@ -16,7 +16,6 @@ from Utils import Constants
 from IPython import embed  # NOQA
 # }}}
 
-
 sns.set()
 sns.set_style('ticks')
 
@@ -413,5 +412,26 @@ ymdcount = uhist_g.YMD.value_counts()
 avcount = uhist_g.AvSessId.value_counts()
 # Il grafico della morte
 # plt.scatter(ymdcount.index, ymdcount.values)
+
+
+if 1:
+    for soglia_s in [11, 19]:
+        dsess_max = data_tot.groupby('UserId')['SessionId'].max().reset_index()
+        urw = rwcount(data_tot, 'UserId')
+        sessratio = pd.merge(dsess_max, urw, on='UserId')
+        utanti = sessratio[sessratio.SessionId >= soglia_s].UserId.values
+        upochi = sessratio[sessratio.SessionId < soglia_s].UserId.values
+        dtanti = data_tot[data_tot.UserId.isin(utanti)]
+        dpochi = data_tot[data_tot.UserId.isin(upochi)]
+        rwta = rwcount(dtanti, 'SessionId').reset_index()
+        rwpo = rwcount(dpochi, 'SessionId').reset_index()
+        rwtutti = rwcount(data_tot, 'SessionId').reset_index()
+        l1 = plt.scatter(rwta.SessionId, rwta.Ratio)
+        l2 = plt.scatter(rwpo.SessionId, rwpo.Ratio)
+        l3 = plt.scatter(rwtutti.SessionId, rwtutti.Ratio, marker='x')
+        plt.legend([l1, l2, l3], ['Almeno {0} sess'.format(soglia_s),
+                                  'Meno di {0} sess'.format(soglia_s),
+                                  'Tutti'])
+        plt.show()
 # }}}
 embed()
