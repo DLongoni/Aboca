@@ -407,7 +407,7 @@ prov = pd.merge(prov, users_per_reg, left_index=True, right_index=True)
 rol = rwcount(data_tot, 'RoleId')
 # }}}
 
-# {{{ REGION: Analisi num giocate utenti
+# {{{ Analisi num giocate utenti
 ymdcount = uhist_g.YMD.value_counts()
 avcount = uhist_g.AvSessId.value_counts()
 # Il grafico della morte
@@ -433,5 +433,11 @@ if 1:
                                   'Meno di {0} sess'.format(soglia_s),
                                   'Tutti'])
         plt.show()
+
+udata = Users.get_users_table()
+udmerge = pd.merge(u_rw_hist, udata)
+regionymd = udmerge.groupby('Regione').YMD.mean()
+provinceymd = udmerge.groupby('ProvId').YMD.mean()
+roleymd = udmerge.groupby('RoleId').YMD.mean()
 # }}}
 embed()
