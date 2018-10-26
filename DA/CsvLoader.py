@@ -31,6 +31,7 @@ def get_prod_history():
     df = df.drop(df.index[df.ProductType == 'RecommendedProduct'])
     df = df.drop(df.index[df.ProductType == 'SoldProduct'])
     hard_fix_prod_hist(df)
+    df = df.rename(columns={'ProductType': 'ActionType'})
     return df
 # }}}
 
@@ -57,6 +58,7 @@ def get_avatar_info():
         r'\bProduct\dRightBenefit\b'), 'InfoType'] = 'RightBenefit'
     df.loc[df.InfoType.str.contains(
         r'\bProduct\dWrongBenefit\b'), 'InfoType'] = 'WrongBenefit'
+    df = df.rename(columns={'InfoType': 'ActionType'})
     return df
 # }}}
 

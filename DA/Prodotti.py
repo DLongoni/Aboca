@@ -2,6 +2,7 @@
 
 # {{{ Import
 import numpy as np
+from functools import lru_cache
 from sklearn.preprocessing import scale
 
 import pandas as pd
@@ -13,6 +14,7 @@ from DA import DataHelper as dh
 # }}}
 
 
+@lru_cache(maxsize=100)
 def get_df(max_date=-1):
     df = CsvL.get_prod_history()
     df = dh.add_avatar_data(df, cut_pce=[5, 6, 7])
@@ -24,31 +26,29 @@ def get_df(max_date=-1):
     return df
 
 
+def get_user_history(user_id):
+    df = get_df()
+    user_hist = df[df.UserId == user_id]
+    return user_hist
+
+
 def __hist_hardfix(df):
     df.loc[(df.ProductName.str.contains('Colilen')) & (df.AvatarPce == 5),
-           'ProductType'] = 'RightProduct'
+           'ActionType'] = 'RightProduct'
     avprod_rw = df.groupby(['AvSessId', 'ProductId']).apply(
         lambda x: pd.Series(
-            {'Ratio': sum(x.ProductType == 'RightProduct') / x.Id.count(),
+            {'Ratio': sum(x.ActionType == 'RightProduct') / x.Id.count(),
              'nTot': x.Id.count()})).reset_index()
     avp_wrong = avprod_rw[~avprod_rw.Ratio.isin([0, 1])]
     for ia, ip in avp_wrong[['AvSessId', 'ProductId']].itertuples(index=False):
         df.loc[(df.AvSessId == ia) & (df.ProductId == ip),
-               'ProductType'] = 'RightProduct'
+               'ActionType'] = 'RightProduct'
 
 
-def get_df_group_prod(df=None, include_rare=False):
-    if df is None:
-        df = get_df()
+@lru_cache(maxsize=100)
+def get_df_group_prod(include_rare=False):
+    df = get_df()
     p_anag = CsvL.get_prod_anag()
-
-    # Names
-    # prod = df[['ProductId', 'ProductName', 'ProductFormat']]
-    # prod = prod.groupby('ProductId')['ProductName',
-    #                                  'ProductFormat'].first().reset_index()
-    # prod['Name'] = prod['ProductName'] + ' ' + prod['ProductFormat']
-    # prod.drop(['ProductName', 'ProductFormat'], axis=1, inplace=True)
-    # prod.set_index('ProductId',true)
 
     n_users = df.groupby('ProductId')['UserId'].nunique().reset_index()
     n_users.rename(columns={'UserId': 'nUsers'}, inplace=True)
@@ -59,7 +59,7 @@ def get_df_group_prod(df=None, include_rare=False):
     n_tot = df.groupby('ProductId')['Id'].count().reset_index()
     n_tot.rename(columns={'Id': 'nTot'}, inplace=True)
 
-    df_r = df[df.ProductType == 'RightProduct']
+    df_r = df[df.ActionType == 'RightProduct']
     n_r = df_r.groupby('ProductId')['Id'].count().reset_index()
     n_r.rename(columns={'Id': 'nRight'}, inplace=True)
 
@@ -89,18 +89,14 @@ def get_df_group_prod(df=None, include_rare=False):
     prod['Ratio'] = prod.nRight/prod.nTot
     prod['UserRatio'] = prod.nTot/prod.nUsers
     prod['GeoRatio'] = prod.nTot/prod.nProv
-    # pd.plotting.scatter_matrix(prod,diagonal = 'kde')
-    # pyplot.show()
-    # nFarma e nUsers sono sostituibili
-    # seleziono quelli su cui ha senso fare un'analisi. corretto o no?
     if not include_rare:
         prod = prod[prod.nTot > 2].reset_index(drop=True)
     return prod
 
 
-def get_df_group_prod_proc(prod=None):
-    if prod is None:
-        prod = get_df_group_prod()
+@lru_cache(maxsize=100)
+def get_df_group_prod_proc():
+    prod = get_df_group_prod()
     prod_proc = prod.copy(deep=True)
     prod_proc.nUsers = scale(np.log(prod.nUsers))
     prod_proc.nFarma = scale(np.log(prod.nFarma))
@@ -113,8 +109,6 @@ def get_df_group_prod_proc(prod=None):
     prod_proc.Ratio = scale(prod.Ratio)
     prod_proc.UserRatio = scale(np.log(prod.UserRatio))
     prod_proc.GeoRatio = scale(np.log(prod.GeoRatio))
-    # pd.plotting.scatter_matrix(prod_proc,diagonal = 'kde')
-    # pyplot.show()
     return prod_proc
 
 
