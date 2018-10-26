@@ -6,7 +6,7 @@ from DA import DataHelper as dh
 from DA import CsvLoader as CsvL
 from DA import Prodotti
 from DA import Users
-from Utils import Constants
+from Utils import Constants as co
 
 import numpy as np
 import pandas as pd
@@ -20,16 +20,17 @@ from IPython import embed  # NOQA
 
 sns.set()
 sns.set_style('ticks')
-sns.set_palette(Constants.abc_l)
+sns.set_palette(co.abc_l)
 
 
-def freq_hist(df, title=""):
+def freq_hist(df, title="", ax=None):
     # sns.set_style('darkgrid')
     if title == "":
         title = 'I prodotti più comuni sono consigliati correttamente?'
     # plt.ion()
-    f = plt.figure(figsize=(9, 8))
-    ax = f.add_subplot(111)
+    if ax is None:
+        f = plt.figure(figsize=(9, 8))
+        ax = f.add_subplot(111)
     dfp = df.sort_values('nTot')
     ax.barh(dfp.ProductId, dfp.Ratio * 100)
     for i, (i_name, i_tot) in enumerate(zip(dfp.ProdName, dfp.nTot)):
@@ -54,14 +55,12 @@ def freq_hist(df, title=""):
     ax.set_xlim([0, 100])
     ax.set_axisbelow(False)
     ax.set_title(title, size=20)
-    ax.set_xlabel(r'% di consigli corretti', size=18)
+    ax.set_xlabel(r'Correttezza', size=18)
     ax.set_ylabel('Numero di consigli', size=18)
-    f.tight_layout()
-    plt.show()
+    # f.tight_layout()
 
 
 def av_freq_hist(df, title="", legend=True):
-    # plt.ion()
     if title == "":
         title = 'Gli avatar più giocati hanno ricevuto prodotti corretti?'
     f = plt.figure(figsize=(9, 8))
@@ -70,8 +69,8 @@ def av_freq_hist(df, title="", legend=True):
     ax.barh(range(0, len(dfp)), dfp.Ratio * 100)
     for i, (i_pce) in enumerate(dfp.AvatarPce):
         i_hist = ax.get_children()[i]
-        i_hist.set_color(Constants.abc_l[i_pce-1])
-        # i_hist.set_alpha(0.7)
+        print(i_pce-1)
+        i_hist.set_color(co.abc_l[i_pce-1])
         i_hist.set_height(0.8)
         i_hist.set_edgecolor('k')
         i_hist.set_linewidth(1)
@@ -79,7 +78,7 @@ def av_freq_hist(df, title="", legend=True):
     if legend:
         l_hand = []
         for i in range(0, 4):
-            i_patch = mpatches.Patch(color=Constants.abc_l[i], lw=1, ec='k',
+            i_patch = mpatches.Patch(color=co.abc_l[i], lw=1, ec='k',
                                      label=dh.pce_descr(i + 1))
             l_hand.append(i_patch)
 
@@ -110,7 +109,7 @@ def av_freq_hist(df, title="", legend=True):
     ax.set_xlim([0, 100])
     ax.set_axisbelow(False)
     ax.set_title(title, size=20)
-    ax.set_xlabel(r'% di consigli corretti', size=18)
+    ax.set_xlabel(r'Correttezza', size=18)
     ax.set_ylabel('Numero di prodotti consigliati', size=18)
     f.tight_layout()
     plt.show()
@@ -124,7 +123,7 @@ def prod_plot(uid, uhist, most_uprod):
         idup_rw = idup.groupby('SessionId').apply(lambda x: pd.Series(
             {'Ratio': sum(x.ActionType == 'RightProduct') / x.Id.count(),
              'nTot': x.Id.count()})).reset_index()
-        ic = Constants.abc_l[i]
+        ic = co.abc_l[i]
         r_obs2 = range(0, len(idup_rw))
         r_obs = np.arange(-0.7, len(idup_rw) - 0.7, 1)
         ia.bar(r_obs, idup_rw.Ratio, color=ic, width=0.7, align='edge')
@@ -137,8 +136,8 @@ def prod_plot(uid, uhist, most_uprod):
         ia.tick_params(labelsize=16)
 
     a = f.axes
-    a[0].set_ylabel('Tasso di correttezza', size=18)
-    a[2].set_ylabel('Tasso di correttezza', size=18)
+    a[0].set_ylabel('Correttezza', size=18)
+    a[2].set_ylabel('Correttezza', size=18)
     a[5].set_ylabel('Numero prodotti consigliati', size=18,
                     color='orange')
     a[7].set_ylabel('Numero prodotti consigliati', size=18,
@@ -163,11 +162,12 @@ def plot_uhist(uid, i_uh, arr_start):
     ax2 = ax.twinx()
     l_hand = []
     l_lab = []
-    line_avg, = ax.plot(r_obs, i_movavg, lw=3, zorder=10)
-    bar_ratio = ax.bar(r_obs2, i_uh.Ratio, color='orange',
+    line_avg, = ax.plot(r_obs, i_movavg, lw=3, zorder=10,
+                        color=co.ab_colors['rosso'])
+    bar_ratio = ax.bar(r_obs2, i_uh.Ratio, color=co.ab_colors['azzurro'],
                        alpha=0.5, width=0.7, align='edge', zorder=1)
-    bar_ntot = ax2.bar(r_obs, i_uh.nTot, color='green', alpha=0.5, width=0.25,
-                       align='edge')
+    bar_ntot = ax2.bar(r_obs, i_uh.nTot, color=co.ab_colors['verde'],
+                       alpha=0.5, width=0.25, align='edge')
     weblog = CsvL.get_web_log(uid)
     ax.set_zorder(ax2.get_zorder() + 1)
     ax.patch.set_visible(False)
@@ -182,12 +182,12 @@ def plot_uhist(uid, i_uh, arr_start):
         xval = np.add(np.where(num_web_check > 0), 0.25).squeeze(axis=0)
         yval = np.ones(len(xval)) * 0.5
         sca_web = ax.scatter(xval, yval, marker='d', edgecolors='k', s=150,
-                             lw=1, facecolor='r', zorder=2)
+                             lw=1, facecolor=co.ab_colors['giallo'], zorder=2)
         l_hand.append(sca_web)
         l_lab.append('Sito web')
 
     ax.legend(tuple(l_hand), tuple(l_lab), fontsize=16)
-    ax.set_ylabel('Tasso di correttezza', size=18)
+    ax.set_ylabel('Correttezza', size=18)
     ax2.set_ylabel('Numero prodotti consigliati', size=18)
     ax.set_xlabel('Sessioni', size=18)
     ax.set_xticks(r_obs)
@@ -196,7 +196,7 @@ def plot_uhist(uid, i_uh, arr_start):
     lbl = arr_start.dt.strftime('%d/%m/%Y')
     ax.set_xticklabels(lbl, rotation=45, ha='right', size=15)
 
-    plt.title("Correttezza di consiglio prodotti nel corso delle sessioni "
+    plt.title("Correttezza nel corso delle sessioni "
               "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
     plt.show()
 

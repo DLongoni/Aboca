@@ -95,21 +95,33 @@ if 0:
             dh.pce_descr(i_pce))
         gm.av_freq_hist(apce, i_tit, False)
 
-# analisi per pce, per prodotto
+# analisi per pce, per prodotto - c'è da fidarsi??
+plt.ion()
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
+
 if 1:
-    for i_pce in all_pce:
-        data_rwt = df[df.AvatarPce == i_pce]
+    for i_pce, iax in enumerate([ax1, ax2, ax3, ax4]):
+        data_rwt = df[df.AvatarPce == i_pce+1]
         apce = rwcount(data_rwt, 'ProductId')
-        apce = apce[apce.nTot > apce.quantile(0.8).nTot].reset_index()
+        apce = apce.nlargest(8, 'nTot').reset_index()
         apce = dh.add_prod_name(apce)
 
-        i_tit = "I prodotti più consigliati per il PCE {0}".format(
-            dh.pce_descr(i_pce))
-        gm.freq_hist(apce, i_tit)
+        i_tit = "PCE {0}".format(
+            dh.pce_descr(i_pce+1))
+        gm.freq_hist(apce, i_tit, iax)
+        for i in range(0, 8):
+            i_hist = iax.get_children()[i]
+            i_hist.set_color(Constants.abc_l[i_pce])
+
+f.suptitle("I prodotti più consigliati per PCE", size=22)
+ax1.set_xlabel("")
+ax2.set_xlabel("")
+ax2.set_ylabel("")
+ax4.set_ylabel("")
+plt.show()
 # }}}
 
 # {{{ Analisi geografica
-# TODO: grafico bar o barh prov con colormap ratio e ntot lunghezza barre
 prov = rwcount(df, 'Regione')
 
 users_per_reg = df.groupby('Regione')['UserId'].nunique().reset_index()
@@ -151,12 +163,7 @@ if 0:
         plt.show()
 
 
-user_ratio = rwcount(df, 'UserId').reset_index()
-u_rw_hist = pd.merge(user_ratio, uhist_g)
-udata = Users.get_users_table()
-udmerge = pd.merge(u_rw_hist, udata)
-regionymd = udmerge.groupby('Regione').YMD.mean()
-provinceymd = udmerge.groupby('ProvId').YMD.mean()
-roleymd = udmerge.groupby('RoleId').YMD.mean()
+udata = Users.add_user_data(uhist_g)
+regionav = udata.groupby('Regione').AvSessId.mean()
 # }}}
 embed()

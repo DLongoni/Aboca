@@ -23,6 +23,10 @@ def get_df(max_date=-1):
     df.drop(['AvatarId'], axis=1, inplace=True)
     df = dm.filter_date(df, 'YMD', max_date)
     df = Users.merge_users_clean(df)
+    df = df[['Id', 'UserId', 'SessionId', 'ActionType', 'ProductId',
+             'AvSessId', 'AvatarPce', 'YMD', 'NameSurname', 'Regione',
+             'RoleId', 'FarmaId', 'Latitudine']]
+    df = dh.add_prod_name(df)
     return df
 
 
@@ -72,8 +76,8 @@ def get_df_group_prod(include_rare=False):
     lat_v = lat_v.fillna(0)
     lat_v.rename(columns={'Latitudine': 'LatVar'}, inplace=True)
 
-    n_prov = df.groupby('ProductId')['ProvId'].nunique().reset_index()
-    n_prov.rename(columns={'ProvId': 'nProv'}, inplace=True)
+    # n_prov = df.groupby('ProductId')['ProvId'].nunique().reset_index()
+    # n_prov.rename(columns={'ProvId': 'nProv'}, inplace=True)
 
     n_reg = df.groupby('ProductId')['Regione'].nunique().reset_index()
     n_reg.rename(columns={'Regione': 'nReg'}, inplace=True)
@@ -84,11 +88,11 @@ def get_df_group_prod(include_rare=False):
     prod = pd.merge(prod, n_r)
     prod = pd.merge(prod, lat_m)
     prod = pd.merge(prod, lat_v)
-    prod = pd.merge(prod, n_prov)
+    # prod = pd.merge(prod, n_prov)
     prod = pd.merge(prod, n_reg)
     prod['Ratio'] = prod.nRight/prod.nTot
     prod['UserRatio'] = prod.nTot/prod.nUsers
-    prod['GeoRatio'] = prod.nTot/prod.nProv
+    # prod['GeoRatio'] = prod.nTot/prod.nProv
     if not include_rare:
         prod = prod[prod.nTot > 2].reset_index(drop=True)
     return prod

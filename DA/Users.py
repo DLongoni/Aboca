@@ -64,5 +64,12 @@ def clean_df_userid(df):
     return df
 
 
+def add_user_data(df):
+    u = get_users_table()
+    u = u[['UserId', 'NameSurname', 'Regione', 'RoleId']]
+    df = pd.merge(df, u, on='UserId')
+    return df
+
+
 if __name__ == "__main__":
     d = get_users_table()
