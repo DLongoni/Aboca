@@ -73,8 +73,6 @@ def visualize(clname, df_fit, samples_fit, preds, samples_preds, centers=None,
     f.suptitle(name)
     clustplot(df_fit, preds, samples_fit, samples_preds, centers)
 
-    mng = plt.get_current_fig_manager()
-    mng.window.state('zoomed')
     if save:
         f.savefig('./Fig/'+name+'.png')
 
@@ -83,8 +81,6 @@ def visualize(clname, df_fit, samples_fit, preds, samples_preds, centers=None,
         name = 'OrigSpace_' + clname + '_' + str(n)
         f.suptitle(name)
         clustplot(df_plot, preds, samples_plot, samples_preds, None)
-        mng = plt.get_current_fig_manager()
-        mng.window.state('zoomed')
         if save:
             f.savefig('./Fig/'+name+'.png')
 
@@ -125,8 +121,6 @@ def dendro(linkage_matrix, clusters, save_name=None, **kwargs):
     if max_d:
         axf.axvline(x=max_d, c='k')
 
-    mng = plt.get_current_fig_manager()
-    mng.window.state('zoomed')
     if save_name:
         nclust = str(max(clusters)+1)
         f.savefig('./Fig/'+save_name + '_' + nclust + '_dendro.png', dpi=900)

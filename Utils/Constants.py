@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from collections import OrderedDict
+import numpy as np
 
 colors = ['b', 'g', 'r', 'c', 'y', 'm', 'k', '#999999']
 ab_colors = OrderedDict([
@@ -14,6 +15,7 @@ ab_colors = OrderedDict([
 ])
 
 abc = ab_colors
-abc_l = list(ab_colors.values())
+abc_l = np.array(list(ab_colors.values()))
+abcl_l = abc_l[[1, 3, 4, 2, 0, 6, 5]]
 
 pic_path = './Fig/'

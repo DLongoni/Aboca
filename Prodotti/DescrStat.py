@@ -36,7 +36,7 @@ if 0:
 if 1:
     df_rari = Prodotti.get_df_group_prod(include_rare=True).sort_values('nTot')
     p_rari = df_rari.nsmallest(10, 'nTot')[['ProdName', 'nTot']]
-    print('*** Prodotti consigliati rarmente ***')
+    print('*** Prodotti consigliati raramente ***')
     print(p_rari)
 # }}}
 

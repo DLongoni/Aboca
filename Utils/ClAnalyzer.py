@@ -145,13 +145,13 @@ class ClAnalyzer:
 
     # {{{ Features
     def print_relevance(self, features=None, **kwargs):
-        df = self.get_df(**kwargs, feat_cols=True)
-        if features is not None:
-            cols = self._features
-        else:
+        df = self.get_df(feat_cols=True, **kwargs)
+        if features is None:
             if self._features is None:
                 raise Exception("Set features first")
             cols = self._features
+        else:
+            cols = features
         print("Relevance analysis for features [{0}]".format(' '.join(cols)))
         for col in cols:
             new_data = df.drop(col, axis=1)
@@ -164,7 +164,7 @@ class ClAnalyzer:
 
     # mode = "iqr" or "2perc"
     def print_outliers(self, mode='iqr', features=None, **kwargs):
-        df_out = self.get_df(**kwargs, feat_cols=True)
+        df_out = self.get_df(feat_cols=True, **kwargs)
         df_plot = self.get_df()
         if features is not None:
             cols = self._features
@@ -314,8 +314,6 @@ class ClAnalyzer:
         plotname = name1 + str(n_clust) + "_vs_" + name2 + "_" + \
             str(n_clust2) + "_" + df_name
         f.suptitle(plotname)
-        mng = plt.get_current_fig_manager()
-        mng.window.state('zoomed')
         if save:
             f.savefig(Constants.pic_path+plotname+'.png')
         plt.show()
@@ -337,8 +335,6 @@ class ClAnalyzer:
                                       axarr[ax_ids], **kwargs)
         f.suptitle(plotname)
 
-        mng = plt.get_current_fig_manager()
-        mng.window.state('zoomed')
         if save:
             f.savefig(Constants.pic_path+plotname+'.png')
         plt.show()
@@ -357,8 +353,8 @@ class ClAnalyzer:
         col1 = df.columns[iter_cols[0]]
         col2 = df.columns[iter_cols[1]]
 
-        c_tot = [Constants.colors[i] for i in clust]
-        c_samp = [Constants.colors[i] for i in samples_labels]
+        c_tot = [Constants.abcl_l[i] for i in clust]
+        c_samp = [Constants.abcl_l[i] for i in samples_labels]
         ax.scatter(x=df[col1], y=df[col2], c=c_tot)
         ax.scatter(x=df_samples[col1], y=df_samples[col2], lw=1,
                    facecolor=c_samp, marker='D', edgecolors='black')
@@ -371,7 +367,7 @@ class ClAnalyzer:
 
         centers = self.get_clust_centers(clust, n_clust=n_clust, **kwargs)
         ax.scatter(centers[:, iter_cols[0]], centers[:, iter_cols[1]], lw=1,
-                   facecolor=Constants.colors[0:n_clust], marker='X',
+                   facecolor=Constants.abcl_l[0:n_clust], marker='X',
                    edgecolors='k', s=150)
 
         ax.set_xlabel(col1)

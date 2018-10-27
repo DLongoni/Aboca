@@ -25,7 +25,7 @@ def get_df(max_date=-1):
     df = Users.merge_users_clean(df)
     df = df[['Id', 'UserId', 'SessionId', 'ActionType', 'ProductId',
              'AvSessId', 'AvatarPce', 'YMD', 'NameSurname', 'Regione',
-             'RoleId', 'FarmaId', 'Latitudine']]
+             'RoleId', 'FarmaId', 'Latitudine', 'ProvId']]
     df = dh.add_prod_name(df)
     return df
 
@@ -54,65 +54,51 @@ def get_df_group_prod(include_rare=False):
     df = get_df()
     p_anag = CsvL.get_prod_anag()
 
-    n_users = df.groupby('ProductId')['UserId'].nunique().reset_index()
-    n_users.rename(columns={'UserId': 'nUsers'}, inplace=True)
+    feat_df = df.groupby('ProductId').apply(lambda x: pd.Series({
+        'nUsers': x.UserId.nunique(),
+        'nFarma': x.FarmaId.nunique(),
+        'nProv': x.ProvId.nunique(),
+        'nReg': x.Regione.nunique(),
+        'nAvSess': x.AvSessId.nunique(),
+        'nSess': x.SessionId.nunique(),
+        'nTot': x.Id.count(),
+        'MedianPce': x.AvatarPce.median(),
+        'MeanPce': x.AvatarPce.mean(),
+        'nRight': sum(x.ActionType == "RightProduct"),
+        'NordSud': x.Latitudine.mean()-42,
+        'LatVar': x.Latitudine.var(),
+        'UserRatio': x.Id.count() / x.UserId.nunique(),
+        'Ratio': sum(x.ActionType == 'RightProduct') / x.Id.count(),
+        'Recency': (dm.MAXDATE - x.YMD.max()).days+1,
+        'Frequency': x.YMD.nunique()
+    })).reset_index()
 
-    n_farma = df.groupby('ProductId')['FarmaId'].nunique().reset_index()
-    n_farma.rename(columns={'FarmaId': 'nFarma'}, inplace=True)
-
-    n_tot = df.groupby('ProductId')['Id'].count().reset_index()
-    n_tot.rename(columns={'Id': 'nTot'}, inplace=True)
-
-    df_r = df[df.ActionType == 'RightProduct']
-    n_r = df_r.groupby('ProductId')['Id'].count().reset_index()
-    n_r.rename(columns={'Id': 'nRight'}, inplace=True)
-
-    lat_m = df.groupby('ProductId')['Latitudine'].mean().reset_index()
-    # Ipotetica latitudine di centro italia
-    lat_m.Latitudine = lat_m.Latitudine - 42
-    lat_m.rename(columns={'Latitudine': 'NordSud'}, inplace=True)
-
-    lat_v = df.groupby('ProductId')['Latitudine'].var().reset_index()
-    lat_v = lat_v.fillna(0)
-    lat_v.rename(columns={'Latitudine': 'LatVar'}, inplace=True)
-
-    # n_prov = df.groupby('ProductId')['ProvId'].nunique().reset_index()
-    # n_prov.rename(columns={'ProvId': 'nProv'}, inplace=True)
-
-    n_reg = df.groupby('ProductId')['Regione'].nunique().reset_index()
-    n_reg.rename(columns={'Regione': 'nReg'}, inplace=True)
-
-    prod = pd.merge(p_anag, n_users)
-    prod = pd.merge(prod, n_farma)
-    prod = pd.merge(prod, n_tot)
-    prod = pd.merge(prod, n_r)
-    prod = pd.merge(prod, lat_m)
-    prod = pd.merge(prod, lat_v)
-    # prod = pd.merge(prod, n_prov)
-    prod = pd.merge(prod, n_reg)
-    prod['Ratio'] = prod.nRight/prod.nTot
-    prod['UserRatio'] = prod.nTot/prod.nUsers
-    # prod['GeoRatio'] = prod.nTot/prod.nProv
+    prod = pd.merge(p_anag, feat_df)
     if not include_rare:
         prod = prod[prod.nTot > 2].reset_index(drop=True)
     return prod
 
 
 @lru_cache(maxsize=100)
-def get_df_group_prod_proc():
-    prod = get_df_group_prod()
+def get_df_group_prod_proc(include_rare=False):
+    prod = get_df_group_prod(include_rare)
     prod_proc = prod.copy(deep=True)
-    prod_proc.nUsers = scale(np.log(prod.nUsers))
-    prod_proc.nFarma = scale(np.log(prod.nFarma))
-    prod_proc.nTot = scale(np.log(prod.nTot))
-    prod_proc.nRight = scale(np.log(prod.nRight))
-    prod_proc.NordSud = scale(prod.NordSud)
-    prod_proc.LatVar = scale(prod.LatVar)
-    prod_proc.nProv = scale(np.log(prod.nProv))
-    prod_proc.nReg = scale(np.log(prod.nReg))
-    prod_proc.Ratio = scale(prod.Ratio)
-    prod_proc.UserRatio = scale(np.log(prod.UserRatio))
-    prod_proc.GeoRatio = scale(np.log(prod.GeoRatio))
+    prod_proc.nUsers = scale(np.log(prod.nUsers.values))
+    prod_proc.nFarma = scale(np.log(prod.nFarma.values))
+    prod_proc.nProv = scale(np.log(prod.nProv.values))
+    prod_proc.nReg = scale(np.log(prod.nReg.values))
+    prod_proc.nAvSess = scale(np.log(prod.nAvSess.values))
+    prod_proc.nSess = scale(np.log(prod.nSess.values))
+    prod_proc.nTot = scale(np.log(prod.nTot.values))
+    prod_proc.MedianPce = scale(prod.MedianPce.values)
+    prod_proc.MeanPce = scale(prod.MeanPce.values)
+    prod_proc.nRight = scale(prod.nRight.values)
+    prod_proc.NordSud = scale(prod.NordSud.values)
+    prod_proc.LatVar = scale(prod.LatVar.values)
+    prod_proc.UserRatio = scale(np.log(prod.UserRatio.values))
+    prod_proc.Ratio = scale(prod.Ratio.values)
+    prod_proc.Recency = scale(np.log(prod.Recency.values))
+    prod_proc.Frequency = scale(np.log(prod.Frequency.values))
     return prod_proc
 
 
