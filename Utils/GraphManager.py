@@ -130,10 +130,12 @@ def prod_count(df, title="", ax=None):
     ax.legend(handles=l_hand, fontsize=16, edgecolor='k')
 
 
-def freq_hist(df, title="", ax=None):
+def freq_hist(df, title="", ylbl="", ax=None):
     # sns.set_style('darkgrid')
     if title == "":
         title = 'I prodotti più comuni sono consigliati correttamente?'
+    if ylbl == "":
+        ylbl = 'Numero di consigli'
     # plt.ion()
     if ax is None:
         f = plt.figure(figsize=(9, 8))
@@ -142,7 +144,7 @@ def freq_hist(df, title="", ax=None):
     ax.barh(df.ProductId, df.Ratio * 100)
     for i, (i_name, i_tot) in enumerate(zip(df.ProdName, df.nTot)):
 
-        i_lbl = "{0} - {1}".format(i_tot, i_name)
+        i_lbl = "{0} - {1}".format(int(i_tot), i_name)
         ax.text(1, i, i_lbl, color="k", va="center", size=16)
 
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
@@ -158,13 +160,15 @@ def freq_hist(df, title="", ax=None):
     ax.set_yticks([])
     ax.set_xlim([0, 100])
     ax.set_xlabel(r'Correttezza', size=18)
-    ax.set_ylabel('Numero di consigli', size=18)
+    ax.set_ylabel(ylbl, size=18)
     # f.tight_layout()
 
 
-def av_freq_hist(df, title="", legend=True):
+def av_freq_hist(df, title="", ylbl="", legend=True):
     if title == "":
         title = 'Gli avatar più giocati hanno ricevuto prodotti corretti?'
+    if ylbl == "":
+        ylbl = 'Numero di prodotti consigliati'
     f = plt.figure(figsize=(9, 8))
     ax = f.add_subplot(111)
     df = df.sort_values('nTot')
@@ -193,6 +197,7 @@ def av_freq_hist(df, title="", legend=True):
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
     __barh_ax_set(ax, title)
     ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_yticks([])
     xgrid = ax.xaxis.get_gridlines()
     xgrid[1].set_color('k')
     xgrid[1].set_ls('--')
@@ -206,7 +211,7 @@ def av_freq_hist(df, title="", legend=True):
     ax.set_xlim([0, 100])
     ax.set_ylim([-0.75, len(df) - 0.25])
     ax.set_xlabel(r'Correttezza', size=18)
-    ax.set_ylabel('Numero di prodotti consigliati', size=18)
+    ax.set_ylabel(ylbl, size=18)
     f.tight_layout()
     plt.show()
 

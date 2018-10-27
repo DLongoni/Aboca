@@ -9,10 +9,10 @@ from IPython import embed
 # Livello logico tra accesso csv e data access specifici
 
 
-def top_prod_av_breakdown(df, av_id, nprod=10):
+def top_prod_av_breakdown(df, av_id, nprod=10, type_suffix='Product'):
     df_av = df[df.AvSessId == av_id]
     # prodotti più frequentemente consigliati sbagliati a questo avatar
-    df_av = rwcount_base(df_av, 'ProductId', 'Product')
+    df_av = rwcount_base(df_av, 'ProductId', type_suffix)
     df_av = df_av.nlargest(nprod, 'nTot').reset_index().fillna(0)
     df_av = add_prod_name(df_av)
     return df_av

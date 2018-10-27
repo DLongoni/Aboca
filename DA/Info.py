@@ -22,5 +22,11 @@ def get_df(max_date=-1):
     return df
 
 
+def get_user_history(user_id):
+    df = get_df()
+    user_hist = df[df.UserId == user_id]
+    return user_hist
+
+
 if __name__ == '__main__':
     embed()
