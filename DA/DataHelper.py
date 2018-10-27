@@ -8,6 +8,7 @@ from IPython import embed
 
 # Livello logico tra accesso csv e data access specifici
 
+
 def top_prod_av_breakdown(df, av_id, nprod=10):
     df_av = df[df.AvSessId == av_id]
     # prodotti più frequentemente consigliati sbagliati a questo avatar
@@ -16,9 +17,11 @@ def top_prod_av_breakdown(df, av_id, nprod=10):
     df_av = add_prod_name(df_av)
     return df_av
 
+
 def sess_start(uhist):
     ustart = uhist.groupby('SessionId').min().reset_index().YMD
     return ustart
+
 
 def rwcount_base(df, group, type_suffix, count_col='Id'):
     rstring = 'Right{0}'.format(type_suffix)
@@ -26,7 +29,7 @@ def rwcount_base(df, group, type_suffix, count_col='Id'):
     df_f = df[(df.ActionType == rstring) | (df.ActionType == wstring)]
     df_rw = df_f.groupby(group).apply(lambda x: pd.Series(
         {'Ratio': sum(x.ActionType == rstring) / x[count_col].count(),
-            'RightCount': sum(x.ActionType == rstring) ,
+            'RightCount': sum(x.ActionType == rstring),
             'nTot': x[count_col].count()})).reset_index()
     return df_rw
 

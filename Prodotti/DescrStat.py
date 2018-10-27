@@ -4,7 +4,6 @@
 # {{{ Import
 import seaborn as sns  # NOQA
 from matplotlib import pyplot as plt  # NOQA
-import pandas as pd
 from DA import Prodotti
 from DA import Users
 from DA import DataHelper as dh
@@ -72,7 +71,7 @@ if 0:
 
 # {{{ Analisi per Avatar
 av = rwcount(df, 'AvSessId')
-av_top = av[av.nTot >= av.nTot.quantile(.80)].reset_index()
+av_top = av.nlargest(20, 'nTot').reset_index()
 av_top_pce = dh.add_avatar_data(av_top)
 av_worst = int(av_top[av_top.Ratio == av_top.Ratio.min()].AvSessId)
 df_worst_rw = dh.top_prod_av_breakdown(df, av_worst)
@@ -96,10 +95,8 @@ if 0:
         gm.av_freq_hist(apce, i_tit, False)
 
 # analisi per pce, per prodotto - c'è da fidarsi??
-plt.ion()
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
-
-if 1:
+if 0:
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
     for i_pce, iax in enumerate([ax1, ax2, ax3, ax4]):
         data_rwt = df[df.AvatarPce == i_pce+1]
         apce = rwcount(data_rwt, 'ProductId')
@@ -113,22 +110,28 @@ if 1:
             i_hist = iax.get_children()[i]
             i_hist.set_color(Constants.abc_l[i_pce])
 
-f.suptitle("I prodotti più consigliati per PCE", size=22)
-ax1.set_xlabel("")
-ax2.set_xlabel("")
-ax2.set_ylabel("")
-ax4.set_ylabel("")
-plt.show()
+    f.suptitle("I prodotti più consigliati per PCE", size=22)
+    ax1.set_xlabel("")
+    ax2.set_xlabel("")
+    ax2.set_ylabel("")
+    ax4.set_ylabel("")
+    plt.show()
 # }}}
 
 # {{{ Analisi geografica
-prov = rwcount(df, 'Regione')
-
+reg = rwcount(df, 'Regione')
 users_per_reg = df.groupby('Regione')['UserId'].nunique().reset_index()
-users_per_reg.set_index('Regione', inplace=True)
+ureg = users_per_reg.rename(columns={'UserId': 'Count'})
+udata = Users.add_user_data(uhist_g)
+regav = udata.groupby('Regione').AvSessId.mean().reset_index()
+regav = regav.rename(columns={'AvSessId': 'Count'})
+if 0:
+    f, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+    gm.region_count(ureg, ax=ax1, color='azzurro')
+    gm.region_count(regav, "Numero medio di avatar giocati", ax=ax2)
+    gm.region_corr(reg, ax=ax3)
+    f.suptitle("Overview regionale", size=22)
 
-prov = pd.merge(prov, users_per_reg, left_index=True, right_index=True)
-rol = rwcount(df, 'RoleId')
 # }}}
 
 # {{{ Analisi num giocate utenti
@@ -142,28 +145,8 @@ avcount = uhist_g.AvSessId.value_counts()
 # per poi mediare sulle sessioni porta a risultati molto simili. Il primo
 # è un progresso mediato sulle giocate e il secondo sul giocatore, circa.
 # comunque non cambia quasi niente
-if 0:
-    for soglia_s in [11, 19]:
-        dsess_max = df.groupby('UserId')['SessionId'].max().reset_index()
-        urw = rwcount(df, 'UserId')
-        sessratio = pd.merge(dsess_max, urw, on='UserId')
-        utanti = sessratio[sessratio.SessionId >= soglia_s].UserId.values
-        upochi = sessratio[sessratio.SessionId < soglia_s].UserId.values
-        dtanti = df[df.UserId.isin(utanti)]
-        dpochi = df[df.UserId.isin(upochi)]
-        rwta = rwcount(dtanti, 'SessionId').reset_index()
-        rwpo = rwcount(dpochi, 'SessionId').reset_index()
-        rwtutti = rwcount(df, 'SessionId').reset_index()
-        l1 = plt.scatter(rwta.SessionId, rwta.Ratio)
-        l2 = plt.scatter(rwpo.SessionId, rwpo.Ratio)
-        l3 = plt.scatter(rwtutti.SessionId, rwtutti.Ratio, marker='x')
-        plt.legend([l1, l2, l3], ['Almeno {0} sess'.format(soglia_s),
-                                  'Meno di {0} sess'.format(soglia_s),
-                                  'Tutti'])
-        plt.show()
-
-
-udata = Users.add_user_data(uhist_g)
-regionav = udata.groupby('Regione').AvSessId.mean()
+if 1:
+    for soglia_s in [11]:  # buono anche 19
+        gm.progresso(df, soglia_s)
 # }}}
 embed()

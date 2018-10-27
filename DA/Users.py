@@ -19,7 +19,7 @@ def get_users_table():
     p = p.drop(['Id', 'Nome', 'Longitudine'], axis=1)
     p = p[['Id_Regione', 'Sigla_automobilistica', 'Latitudine']]
     p = p.rename(columns={'Sigla_automobilistica': 'ProvId'})
-    r['Nome'] = r.Nome.apply(lambda n: n[0:4])
+    # r['Nome'] = r.Nome.apply(lambda n: n[0:4])
     ur = ur.drop(['Id', 'CreatorUserId', 'TenantId'], axis=1)
 
     # alcuni utenti tipo 208 hanno più di un ruolo
