@@ -105,7 +105,7 @@ if 0:
 
         i_tit = "PCE {0}".format(
             dh.pce_descr(i_pce+1))
-        gm.freq_hist(apce, i_tit, iax)
+        gm.freq_hist(apce, i_tit, ax=iax)
         for i in range(0, 8):
             i_hist = iax.get_children()[i]
             i_hist.set_color(Constants.abc_l[i_pce])
@@ -115,11 +115,11 @@ if 0:
     ax2.set_xlabel("")
     ax2.set_ylabel("")
     ax4.set_ylabel("")
-    plt.show()
 # }}}
 
 # {{{ Analisi geografica
 reg = rwcount(df, 'Regione')
+reg = reg.sort_values('Regione')
 users_per_reg = df.groupby('Regione')['UserId'].nunique().reset_index()
 ureg = users_per_reg.rename(columns={'UserId': 'Count'})
 udata = Users.add_user_data(uhist_g)
@@ -131,6 +131,12 @@ if 0:
     gm.region_count(regav, "Numero medio di avatar giocati", ax=ax2)
     gm.region_corr(reg, ax=ax3)
     f.suptitle("Overview regionale", size=22)
+    ax1.set_xlabel("Numero di utenti", size=18)
+    ax2.set_xlabel("Numero di avatar", size=18)
+    ax3.set_xlabel("Correttezza", size=18)
+    ax1.set_title("Quanti utenti hanno giocato?", size=20)
+    ax2.set_title("Clienti serviti in media", size=20)
+    ax3.set_title("Correttezza dei consigli", size=20)
 
 # }}}
 
@@ -145,7 +151,7 @@ avcount = uhist_g.AvSessId.value_counts()
 # per poi mediare sulle sessioni porta a risultati molto simili. Il primo
 # è un progresso mediato sulle giocate e il secondo sul giocatore, circa.
 # comunque non cambia quasi niente
-if 1:
+if 0:
     for soglia_s in [11]:  # buono anche 19
         gm.progresso(df, soglia_s)
 # }}}

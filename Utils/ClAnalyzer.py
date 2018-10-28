@@ -355,9 +355,9 @@ class ClAnalyzer:
 
         c_tot = [Constants.abcl_l[i] for i in clust]
         c_samp = [Constants.abcl_l[i] for i in samples_labels]
-        ax.scatter(x=df[col1], y=df[col2], c=c_tot)
+        ax.scatter(x=df[col1], y=df[col2], c=c_tot, s=50)
         ax.scatter(x=df_samples[col1], y=df_samples[col2], lw=1,
-                   facecolor=c_samp, marker='D', edgecolors='black')
+                   facecolor=c_samp, marker='D', edgecolors='black', s=60)
         if samples_label_col != "":
             df_samples_labels = self.get_df_samples(cols=(samples_label_col,))
             for x, y, l in zip(df_samples[col1], df_samples[col2],

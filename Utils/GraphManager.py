@@ -21,7 +21,6 @@ from IPython import embed  # NOQA
 sns.set()
 sns.set_style('ticks')
 sns.set_palette(co.abc_l)
-plt.ion()
 
 
 def progresso(df, soglia, ax=None):
@@ -50,6 +49,10 @@ def progresso(df, soglia, ax=None):
     ax.set_title('Correttezza media al crescere dell\'impegno', size=20)
     ax.set_ylabel('Correttezza', size=16)
     ax.set_xlabel('Sessioni', size=16)
+    vals = [0, 0.25, 0.5, 0.75, 1]
+    ax.set_yticks(vals)
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter())
+    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
 
 
 def region_count(df, title="", color="", ax=None):
@@ -112,13 +115,14 @@ def prod_count(df, title="", ax=None):
             i_hist.set_color(co.ab_colors['rosso'])
         else:
             i_hist.set_color(co.ab_colors['azzurro'])
-        i_lbl = "{0} - {1}".format(i_tot, i_name)
+        i_lbl = "{0} - {1}".format(int(i_tot), i_name)
         ax.text(1, i, i_lbl, color="k", va="center", size=16)
 
     __barh_ax_set(ax, title)
     ax.tick_params(labelsize=16)
     # ax.set_xticks([0, 50, 75, 100])
     ax.set_xlabel(r'Numero di prodotti', size=18)
+    ax.set_yticks([])
 
     l_hand = []
     r_patch = mpatches.Patch(color=co.ab_colors['azzurro'], lw=1, ec='k',
@@ -131,12 +135,10 @@ def prod_count(df, title="", ax=None):
 
 
 def freq_hist(df, title="", ylbl="", ax=None):
-    # sns.set_style('darkgrid')
     if title == "":
         title = 'I prodotti più comuni sono consigliati correttamente?'
     if ylbl == "":
         ylbl = 'Numero di consigli'
-    # plt.ion()
     if ax is None:
         f = plt.figure(figsize=(9, 8))
         ax = f.add_subplot(111)
@@ -161,7 +163,6 @@ def freq_hist(df, title="", ylbl="", ax=None):
     ax.set_xlim([0, 100])
     ax.set_xlabel(r'Correttezza', size=18)
     ax.set_ylabel(ylbl, size=18)
-    # f.tight_layout()
 
 
 def av_freq_hist(df, title="", ylbl="", legend=True):
@@ -191,7 +192,7 @@ def av_freq_hist(df, title="", ylbl="", legend=True):
     for i, (i_name, i_tot, i_sess) in enumerate(
             zip(df.AvName, df.nTot, df.SessionId)):
 
-        i_lbl = "{0} - {1} - {2}".format(i_tot, i_name, i_sess)
+        i_lbl = "{0} - {1} - {2}".format(int(i_tot), i_name, i_sess)
         ax.text(1, i - 0.1, i_lbl, color="k", va="center", size=14)
 
     ax.xaxis.set_major_formatter(ticker.PercentFormatter())
@@ -213,11 +214,9 @@ def av_freq_hist(df, title="", ylbl="", legend=True):
     ax.set_xlabel(r'Correttezza', size=18)
     ax.set_ylabel(ylbl, size=18)
     f.tight_layout()
-    plt.show()
 
 
 def prod_plot(uid, uhist, most_uprod):
-    plt.ion()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
     cmap = [0, 1, 2, 4]
     for i, (ip, ia) in enumerate(zip(most_uprod, [ax1, ax2, ax3, ax4])):
@@ -234,9 +233,13 @@ def prod_plot(uid, uhist, most_uprod):
                 width=0.25, align='edge')
         ia2.set_yticks(range(0, int(idup_rw.nTot.max() + 1)))
         ipname = Prodotti.get_product_name(ip)
-        ia.set_title('Progresso per {0}'.format(ipname), size=16)
+        ia.set_title('Progresso per {0}'.format(ipname), size=22)
         ia.set_xticks([])
         ia.tick_params(labelsize=16)
+        vals = [0, 0.25, 0.5, 0.75, 1]
+        ia.set_yticks(vals)
+        ia.yaxis.set_major_formatter(ticker.PercentFormatter())
+        ia.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
 
     a = f.axes
     a[0].set_ylabel('Correttezza', size=18)
@@ -248,12 +251,10 @@ def prod_plot(uid, uhist, most_uprod):
     a[2].set_xlabel('Sessioni', size=18)
     a[3].set_xlabel('Sessioni', size=18)
 
-    f.suptitle('Utente {0}'.format(Users.get_user_name(uid)), size=18)
-    plt.show()
+    f.suptitle('Utente {0}'.format(Users.get_user_name(uid)), size=25)
 
 
 def plot_uhist(uid, i_uh, arr_start):
-    plt.ion()
     i_uh_r = i_uh.rolling(10)
     i_sumR = i_uh_r.RightCount.sum()
     i_sumT = i_uh_r.nTot.sum()
@@ -295,13 +296,21 @@ def plot_uhist(uid, i_uh, arr_start):
     ax.set_xlabel('Sessioni', size=18)
     ax.set_xticks(r_obs)
     ax.tick_params(labelsize=16)
+    vals = [0, 0.25, 0.5, 0.75, 1]
+    ax.set_yticks(vals)
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter())
+    ax.set_yticklabels(['{:,.0%}'.format(x) for x in vals])
+
     ax2.tick_params(labelsize=16)
+    yticks = np.arange(0, i_uh.nTot.max(), 5)
+    yticks = np.append(yticks, i_uh.nTot.max())
+    ax2.set_yticks(yticks)
+    ax2.yaxis.set_major_formatter(ticker.ScalarFormatter())
     lbl = arr_start.dt.strftime('%d/%m/%Y')
     ax.set_xticklabels(lbl, rotation=45, ha='right', size=15)
 
     plt.title("Correttezza nel corso delle sessioni "
               "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
-    plt.show()
 
 
 def __count_occurrences(lb, data):

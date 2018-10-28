@@ -34,7 +34,8 @@ CA.features = feats
 # 1: molto consigliato
 # 2: consigliato a nord
 # 3: consigliato correttamente e numeroso
-samples = ['P0011AN', 'P0018AN', 'P0080AB']
+# samples = ['P0011AN', 'P0018AN', 'P0080AB']
+samples = ['P0011AN']
 CA.set_samples(samples, 'ProductId')
 
 CA.print_relevance(df_name='scaled')
@@ -101,14 +102,14 @@ CA.describe_clusters('kmeans', 2)
 # CA.plot_cluster_diff(2,'agglo','kmeans',feat_cols=True)
 
 # Grafico ad hoc presentazione
-if 1:
+if 0:
     f, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
     CA.add_cluster_plot('kmeans3', 4, [0, 1], ax1, cols=('nUsers', 'Ratio'))
     CA.add_cluster_plot('kmeans3', 4, [0, 1], ax2, cols=('Recency', 'Ratio'))
-    f.suptitle('Prodotti divisi in 4 cluster', size=22)
-    ax1.set_xlabel('Numero di utenti', size=18)
-    ax1.set_ylabel('Correttezza', size=18)
-    ax2.set_xlabel('Giorni dall\'ultimo consiglio', size=18)
+    f.suptitle('Un esempio di suddivisione in quattro cluster', size=25)
+    ax1.set_xlabel('Numero di utenti', size=20)
+    ax1.set_ylabel('Correttezza', size=20)
+    ax2.set_xlabel('Giorni passati dall\'ultimo consiglio (al 30/09)', size=18)
     ax2.set_ylabel('Correttezza', size=18)
 
     vals = [0, 0.25, 0.5, 0.75, 1]
@@ -119,19 +120,25 @@ if 1:
     ax2.set_yticklabels([])
     ax1.tick_params(labelsize=16)
     ax2.tick_params(labelsize=16)
+    flo = df[df.ProductId == 'P0011AN']
+    ax1.text(flo.nUsers, flo.Ratio, 'Flora\nIntestinale', size=16,
+             ha='right', va='center')
+    ax2.text(flo.Recency, flo.Ratio, 'Flora\nIntestinale', size=16,
+             ha='left', va='center')
 
     plt.show()
 
-if 0:  # mostro cluster crescenti
+if 1:  # mostro cluster crescenti
     f, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
     CA.add_cluster_plot('kmeans3', 2, [0, 1], ax1, cols=('nUsers', 'Ratio'))
     CA.add_cluster_plot('kmeans3', 3, [0, 1], ax2, cols=('nUsers', 'Ratio'))
     CA.add_cluster_plot('kmeans3', 4, [0, 1], ax3, cols=('nUsers', 'Ratio'))
-    f.suptitle('Cluster di prodotti in numero crescente', size=22)
+    f.suptitle('Suddivisione dei prodotti in un numero crescente di '
+               'cluster', size=25)
     ax1.set_title('2', size=20)
     ax2.set_title('3', size=20)
     ax3.set_title('4', size=20)
-    ax1.set_ylabel('Correttezza', size=18)
+    ax1.set_ylabel('Correttezza', size=20)
     ax1.yaxis.set_major_formatter(ticker.PercentFormatter())
     vals = [0, 0.25, 0.5, 0.75, 1]
     ax1.set_yticks(vals)
@@ -143,11 +150,15 @@ if 0:  # mostro cluster crescenti
     ax2.set_ylabel("")
     ax3.set_ylabel("")
     ax1.set_xlabel('')
-    ax2.set_xlabel('Numero di utenti', size=18)
+    ax2.set_xlabel('Numero di utenti che hanno consigliato il '
+                   'prodotto', size=20)
     ax3.set_xlabel('')
     ax1.tick_params(labelsize=16)
     ax2.tick_params(labelsize=16)
     ax3.tick_params(labelsize=16)
+    flo = df[df.ProductId == 'P0011AN']
+    ax2.text(flo.nUsers, flo.Ratio, 'Flora\nIntestinale', size=16,
+             ha='right', va='center')
     plt.show()
 
 embed()
