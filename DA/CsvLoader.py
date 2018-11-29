@@ -64,8 +64,6 @@ def get_avatar_info():
 
 
 # {{{ REGION: Avatar
-
-
 @lru_cache(maxsize=100)
 def get_avatar_pce():
     print('*** Loading avatar pce from csv')

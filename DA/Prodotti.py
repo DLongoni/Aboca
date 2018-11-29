@@ -66,7 +66,7 @@ def get_df_group_prod(include_rare=False):
         'MeanPce': x.AvatarPce.mean(),
         'nRight': sum(x.ActionType == "RightProduct"),
         'NordSud': x.Latitudine.mean()-42,
-        'LatVar': x.Latitudine.var(),
+        # 'LatVar': x.Latitudine.var(),
         'UserRatio': x.Id.count() / x.UserId.nunique(),
         'Ratio': sum(x.ActionType == 'RightProduct') / x.Id.count(),
         'Recency': (dm.MAXDATE - x.YMD.max()).days+1,
@@ -94,7 +94,7 @@ def get_df_group_prod_proc(include_rare=False):
     prod_proc.MeanPce = scale(prod.MeanPce.values)
     prod_proc.nRight = scale(prod.nRight.values)
     prod_proc.NordSud = scale(prod.NordSud.values)
-    prod_proc.LatVar = scale(prod.LatVar.values)
+    # prod_proc.LatVar = scale(prod.LatVar.values)
     prod_proc.UserRatio = scale(np.log(prod.UserRatio.values))
     prod_proc.Ratio = scale(prod.Ratio.values)
     prod_proc.Recency = scale(np.log(prod.Recency.values))

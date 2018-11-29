@@ -21,7 +21,7 @@ from IPython import embed
 
 sns.set()
 sns.set_palette(Constants.abc_l)
-plt.ion()
+# plt.ion()
 
 # {{{ Preparazione Dataset
 df = Prodotti.get_df_group_prod(include_rare=True)
@@ -102,7 +102,7 @@ CA.describe_clusters('kmeans', 2)
 # CA.plot_cluster_diff(2,'agglo','kmeans',feat_cols=True)
 
 # Grafico ad hoc presentazione
-if 0:
+if 4:
     f, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
     CA.add_cluster_plot('kmeans3', 4, [0, 1], ax1, cols=('nUsers', 'Ratio'))
     CA.add_cluster_plot('kmeans3', 4, [0, 1], ax2, cols=('Recency', 'Ratio'))
@@ -128,7 +128,7 @@ if 0:
 
     plt.show()
 
-if 1:  # mostro cluster crescenti
+if 0:  # mostro cluster crescenti
     f, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
     CA.add_cluster_plot('kmeans3', 2, [0, 1], ax1, cols=('nUsers', 'Ratio'))
     CA.add_cluster_plot('kmeans3', 3, [0, 1], ax2, cols=('nUsers', 'Ratio'))

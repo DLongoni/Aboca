@@ -4,7 +4,7 @@
 import pandas as pd
 
 MINDATE = pd.Timestamp(2017, 11, 1)
-MAXDATE = pd.Timestamp(2018, 9, 30)
+MAXDATE = pd.Timestamp(2018, 11, 28)
 
 
 def filter_date(df, date_column, max_date=-1):

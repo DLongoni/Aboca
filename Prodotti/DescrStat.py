@@ -95,7 +95,7 @@ if 0:
         gm.av_freq_hist(apce, i_tit, False)
 
 # analisi per pce, per prodotto - c'è da fidarsi??
-if 0:
+if 1:
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
     for i_pce, iax in enumerate([ax1, ax2, ax3, ax4]):
         data_rwt = df[df.AvatarPce == i_pce+1]
