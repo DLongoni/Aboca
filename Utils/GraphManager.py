@@ -278,9 +278,9 @@ def plot_uhist(uid, i_uh, arr_start):
     l_hand.append(line_avg)
     l_lab.append('Rolling average')
     l_hand.append(bar_ratio)
-    l_lab.append('Correttezza')
+    l_lab.append('Correctness')
     l_hand.append(bar_ntot)
-    l_lab.append('Tot prodotti')
+    l_lab.append('Number of products')
     if weblog is not None:
         num_web_check = __count_occurrences(arr_start.values, weblog)
         xval = np.add(np.where(num_web_check > 0), 0.25).squeeze(axis=0)
@@ -288,12 +288,12 @@ def plot_uhist(uid, i_uh, arr_start):
         sca_web = ax.scatter(xval, yval, marker='d', edgecolors='k', s=150,
                              lw=1, facecolor=co.ab_colors['giallo'], zorder=2)
         l_hand.append(sca_web)
-        l_lab.append('Sito web')
+        l_lab.append('Website check')
 
     ax.legend(tuple(l_hand), tuple(l_lab), fontsize=16)
-    ax.set_ylabel('Correttezza', size=18)
-    ax2.set_ylabel('Numero prodotti consigliati', size=18)
-    ax.set_xlabel('Sessioni', size=18)
+    ax.set_ylabel('% of correct recommendations', size=18)
+    ax2.set_ylabel('Number of recommended products', size=18)
+    ax.set_xlabel('Sessions', size=18)
     ax.set_xticks(r_obs)
     ax.tick_params(labelsize=16)
     vals = [0, 0.25, 0.5, 0.75, 1]
@@ -309,8 +309,8 @@ def plot_uhist(uid, i_uh, arr_start):
     lbl = arr_start.dt.strftime('%d/%m/%Y')
     ax.set_xticklabels(lbl, rotation=45, ha='right', size=15)
 
-    plt.title("Correttezza nel corso delle sessioni "
-              "per {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
+    plt.title("Performance history for user"
+              " {0}".format(Users.get_user_name(uid)), size=25, y=1.02)
 
 
 def __count_occurrences(lb, data):

@@ -21,7 +21,7 @@ from IPython import embed
 
 sns.set()
 sns.set_palette(Constants.abc_l)
-plt.ion()
+# plt.ion()
 
 # {{{ Preparazione Dataset
 df = Prodotti.get_df_group_prod(include_rare=True)
@@ -126,7 +126,7 @@ if 0:
     ax2.text(flo.Recency, flo.Ratio, 'Flora\nIntestinale', size=16,
              ha='left', va='center')
 
-    plt.show()
+    # plt.show()
 
 if 1:  # mostro cluster crescenti
     f, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
@@ -159,6 +159,6 @@ if 1:  # mostro cluster crescenti
     flo = df[df.ProductId == 'P0011AN']
     ax2.text(flo.nUsers, flo.Ratio, 'Flora\nIntestinale', size=16,
              ha='right', va='center')
-    plt.show()
+    # plt.show()
 
 embed()

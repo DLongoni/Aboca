@@ -33,7 +33,7 @@ if 0:
 # }}}
 
 # {{{ Prodotti più rari
-if 1:
+if 0:
     df_rari = Prodotti.get_df_group_prod(include_rare=True).sort_values('nTot')
     p_rari = df_rari.nsmallest(10, 'nTot')[['ProdName', 'nTot']]
     print('*** Prodotti consigliati raramente ***')
@@ -82,6 +82,10 @@ print(df_worst_rw)
 
 # {{{ Analisi per PCE
 all_pce = sorted(df.AvatarPce.unique())
+
+# Grafico avatar più giocati per pce
+if 0:
+    gm.av_freq_hist(av_top_pce)
 
 # analisi per pce, per avatar - poco interessante??
 if 0:
