@@ -108,7 +108,7 @@ def prod_count(df, title="", ax=None):
     df = df.sort_values('nTot')
     ax.barh(df.ProductId, df.nTot)
     for i, (i_name, i_tot, i_right) in enumerate(
-            zip(df.ProdName, df.nTot, df.RightCount)):
+            zip(df.ProdName, df.nTot, df.nRight)):
 
         i_hist = ax.get_children()[i]
         if i_right == 0:
