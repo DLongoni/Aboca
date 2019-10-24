@@ -129,7 +129,7 @@ ureg = users_per_reg.rename(columns={'UserId': 'Count'})
 udata = Users.add_user_data(uhist_g)
 regav = udata.groupby('Regione').AvSessId.mean().reset_index()
 regav = regav.rename(columns={'AvSessId': 'Count'})
-if 0:
+if 1:
     f, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
     gm.region_count(ureg, ax=ax1, color='azzurro')
     gm.region_count(regav, "Numero medio di avatar giocati", ax=ax2)

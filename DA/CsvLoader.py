@@ -78,7 +78,7 @@ def get_avatar_pce():
 def get_avatar_anag():
     print('*** Loading avatar data from csv')
     df = pd.read_csv('./Dataset/Dumps/out_qVrAvatars.csv', sep='$')
-    df = df[['Id', 'Name', 'Surname', 'Age']]
+    df = df[['Id', 'Name', 'Surname', 'Age', 'Sex']]
     df['AvName'] = df['Name'] + ' ' + df['Surname']
     df.drop(['Name', 'Surname'], axis=1, inplace=True)
     df.rename(columns={'Id': 'AvatarId'}, inplace=True)
