@@ -17,7 +17,7 @@ from DA import DataHelper as dh
 @lru_cache(maxsize=100)
 def get_df(max_date=-1):
     df = CsvL.get_prod_history()
-    df = dh.add_avatar_data(df)
+    df = dh.add_avatar_data(df, cut_pce=[5, 6, 7])
     __hist_hardfix(df)
     df = dh.add_session_date(df)
     df.drop(['AvatarId'], axis=1, inplace=True)

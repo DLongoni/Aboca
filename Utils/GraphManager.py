@@ -224,6 +224,7 @@ def prod_plot(uid, uhist, most_uprod):
         idup_rw = idup.groupby('SessionId').apply(lambda x: pd.Series(
             {'Ratio': sum(x.ActionType == 'RightProduct') / x.Id.count(),
              'nTot': x.Id.count()})).reset_index()
+        idup_rw.to_csv('./8-'+ip+'.csv')
         ic = co.abc_l[cmap[i]]
         r_obs2 = range(0, len(idup_rw))
         r_obs = np.arange(-0.7, len(idup_rw) - 0.7, 1)

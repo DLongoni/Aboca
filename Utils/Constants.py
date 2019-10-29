@@ -19,3 +19,10 @@ abc_l = np.array(list(ab_colors.values()))
 abcl_l = abc_l[[1, 3, 4, 2, 0, 6, 5]]
 
 pic_path = './Fig/'
+
+BASE_DB = "it"
+
+
+def dumps_path(db=BASE_DB):
+    ret = "./Dataset/" + db + "/"
+    return ret

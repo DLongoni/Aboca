@@ -3,6 +3,7 @@
 from functools import lru_cache
 from IPython import embed
 from DA import DatesManager as dm
+from Utils import Constants as co
 import logging
 import pandas as pd
 
@@ -11,7 +12,7 @@ import pandas as pd
 @lru_cache(maxsize=100)
 def get_prod_anag():
     print('*** Loading products data from csv')
-    p_anag = pd.read_csv('./Dataset/Dumps/ProdAnag.csv', sep='$')
+    p_anag = pd.read_csv(co.dumps_path()+'ProdAnag.csv', sep='$')
     p_anag['ProductId'] = p_anag['Codice'] + p_anag['Azienda']
     p_anag['ProdName'] = (p_anag['Descrizione'] + ' ' + p_anag['Formato'] +
                           ' ' + p_anag['Confezione'])
@@ -23,7 +24,7 @@ def get_prod_anag():
 @lru_cache(maxsize=100)
 def get_prod_history():
     print('*** Loading products history from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarProduct.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qVrAvatarProduct.csv', sep='$')
     df.drop(['TenantId', 'DeletionTime', 'LastModificationTime',
              'LastModifierUserId', 'CreatorUserId', 'IsDeleted',
              'DeleterUserId', 'ProductSequence', 'ProductPce', 'CreationTime'],
@@ -40,7 +41,7 @@ def get_prod_history():
 @lru_cache(maxsize=100)
 def get_avatar_info():
     print('*** Loading avatar info from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarInfo.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qVrAvatarInfo.csv', sep='$')
     # 25-10-18 ad oggi escludo sequence, e infoid che non so come interpretare
     df = df[['Id', 'UserId', 'SessionId', 'AvatarId', 'InfoType',
              'InfoText', 'ProductId']]
@@ -67,7 +68,7 @@ def get_avatar_info():
 @lru_cache(maxsize=100)
 def get_avatar_pce():
     print('*** Loading avatar pce from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarsPce.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qVrAvatarsPce.csv', sep='$')
     df = df[['Id', 'SessionId', 'AvatarId', 'PCEId']]
     df.rename(columns={'Id': 'AvSessId'}, inplace=True)
     df.rename(columns={'PCEId': 'AvatarPce'}, inplace=True)
@@ -77,7 +78,7 @@ def get_avatar_pce():
 @lru_cache(maxsize=100)
 def get_avatar_anag():
     print('*** Loading avatar data from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatars.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qVrAvatars.csv', sep='$')
     df = df[['Id', 'Name', 'Surname', 'Age', 'Sex']]
     df['AvName'] = df['Name'] + ' ' + df['Surname']
     df.drop(['Name', 'Surname'], axis=1, inplace=True)
@@ -90,7 +91,7 @@ def get_avatar_anag():
 @lru_cache(maxsize=100)
 def get_users_anag():
     print('*** Loading users anag from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qAbpUsers.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qAbpUsers.csv', sep='$')
     df['NameSurname'] = df['Name'].str.title() + ' ' + \
         df['Surname'].str.title()
     df = df[['Id', 'ClientCode', 'PdcCode', 'NameSurname']]
@@ -103,28 +104,28 @@ def get_users_anag():
 @lru_cache(maxsize=100)
 def get_customers_anag():
     print('*** Loading customers anag from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrCustomers.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qVrCustomers.csv', sep='$')
     return df
 
 
 @lru_cache(maxsize=100)
 def get_province():
     print('*** Loading province from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qProvince.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qProvince.csv', sep='$')
     return df
 
 
 @lru_cache(maxsize=100)
 def get_regions():
     print('*** Loading regions from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qRegioni.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qRegioni.csv', sep='$')
     return df
 
 
 @lru_cache(maxsize=100)
 def get_user_roles():
     print('*** Loading user roles from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qAbpUserroles.csv', sep='$')
+    df = pd.read_csv(co.dumps_path()+'out_qAbpUserroles.csv', sep='$')
     return df
 
 # }}}
@@ -135,9 +136,9 @@ def get_user_roles():
 def get_web_log(uid):
     print('*** Loading web log for user [{0}]'.format(uid))
     if uid == 2668:
-        df = pd.read_csv('./Dataset/Dumps/Ferrari.csv', sep='$')
+        df = pd.read_csv(co.dumps_path()+'Ferrari.csv', sep='$')
     elif uid == 3607:
-        df = pd.read_csv('./Dataset/Dumps/Cataldi.csv', sep='$')
+        df = pd.read_csv(co.dumps_path()+'Cataldi.csv', sep='$')
     else:
         logging.warning("No web log available for user [{0}]"
                         .format(uid))
@@ -155,8 +156,8 @@ def get_web_log(uid):
 def get_avatar_history():
     # Questa tabella ha molte più info ma per ora mi serve sessiondate
     print('*** Loading sessions history from csv')
-    df = pd.read_csv('./Dataset/Dumps/out_qVrAvatarHistory.csv', sep='$')
-    df = df[['UserId', 'SessionId', 'AvatarId', 'StartDate']]
+    df = pd.read_csv(co.dumps_path()+'out_qVrAvatarHistory.csv', sep='$')
+    df = df[['UserId', 'SessionId', 'AvatarId', 'StartDate', 'Total']]
     df.StartDate = pd.to_datetime(df.StartDate, dayfirst=True)
     df = dm.add_aggregate_date(df, 'StartDate')
     df = df.drop('StartDate', axis=1)
